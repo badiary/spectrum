@@ -1353,10 +1353,10 @@ function setDataFromTazumenBrowser(data: any) {
   const caption_dic: { [zumen_num: string]: string } = {};
   const zumen_tags = document
     .getElementById("content")!
-    .innerText.match(/【図[^】]+】.+/g);
+    .innerText.match(/【図[^】]+】[^【]+/g);
   if (zumen_tags) {
     zumen_tags.forEach((caption) => {
-      const arr = caption.match(/【(図[^】]+)】(.+)/);
+      const arr = caption.match(/【(図[^】]+)】([^【]+)/);
       if (arr?.length === 3) {
         caption_dic[zenkaku2Hankaku(arr[1]!)] = arr[2]!;
       }
