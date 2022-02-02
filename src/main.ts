@@ -16,12 +16,8 @@ window.addEventListener("load", async () => {
   // content_root, content_window設定
   let content_root, content_window;
   if (tool_type === "pdf_canvas") {
-    // // @ts-ignore
-    // window.updateCommentContainer = updateCommentContainer;
     // @ts-ignore
     window.decoratePage = decoratePage;
-    // // @ts-ignore
-    // window.initPDFViewer = initPDFViewer;
 
     await new Promise((resolve, reject) => {
       const timer1 = setInterval(() => {
@@ -37,18 +33,6 @@ window.addEventListener("load", async () => {
     }).then(() => {
       content_window = document.querySelector("iframe")!.contentWindow!;
       content_root = content_window.document.getElementById("viewer")!;
-
-      // comment_containerの高さをPDFの高さに合わせる
-      // new ResizeSensor(content_root, () => {
-      //   const ifr = document.querySelector("iframe")!.contentWindow!.document;
-      //   const ifr_scroll_height =
-      //     ifr.getElementById("toolbarViewer")!.scrollHeight +
-      //     ifr.getElementById("viewerContainer")!.scrollHeight;
-      //   const comment_svg = document.getElementById("comment_svg")!;
-      //   const comment_div = document.getElementById("comment_div")!;
-      //   comment_svg.style.height = `${ifr_scroll_height}px`;
-      //   comment_div.style.height = `${ifr_scroll_height}px`;
-      // });
     });
   } else {
     content_window = window;
@@ -72,7 +56,6 @@ window.addEventListener("load", async () => {
     content_window as Window,
     cv,
     selected_color,
-    document.getElementById("comment_color")!.innerText,
     (document.getElementById("dark_mode")! as HTMLInputElement).checked,
     (document.getElementById("block_mode")! as HTMLInputElement).checked
   );
@@ -222,6 +205,7 @@ async function initializeHTML() {
       !color_picker_comment.contains(e.target)
     ) {
       color_picker_comment.style.display = "none";
+      color_picker.setAttribute("comment_id", "");
     }
     const help_box = document.getElementById("help")!;
     if (help_box.style.display !== "none" && !help_box.contains(e.target)) {
@@ -411,6 +395,9 @@ async function initializeHTML() {
     }
   });
   document.getElementById("block_mode")!.addEventListener("change", (e) => {
+    // @ts-ignore
+    localStorage.setItem("SAT_block_mode", e.target.checked.toString());
+
     showSpinner("ワード反転中...", 10, () => {
       if (e.target instanceof HTMLInputElement && e.target.checked) {
         sat.word.block_mode = true;
@@ -577,25 +564,14 @@ async function initializeHTML() {
 
   document.getElementById("dark_mode")!.addEventListener("change", (e) => {
     if (!(e.target instanceof HTMLInputElement)) return;
+
+    localStorage.setItem("SAT_dark_mode", e.target.checked.toString());
     if (e.target.checked) {
       document.body.classList.add("dark");
       sat.dark_mode = true;
-      if (sat.comment.background_color === "#ffcccc") {
-        sat.comment.background_color = "#cc3300";
-        document.getElementById("btn_comment")!.style.backgroundColor =
-          "#cc3300";
-
-        document.getElementById("comment_color")!.innerText = "#cc3300";
-      }
     } else {
       document.body.classList.remove("dark");
       sat.dark_mode = false;
-      if (sat.comment.background_color === "#cc3300") {
-        sat.comment.background_color = "#ffcccc";
-        document.getElementById("btn_comment")!.style.backgroundColor =
-          "#ffcccc";
-        document.getElementById("comment_color")!.innerText = "#ffcccc";
-      }
     }
 
     if (sat.tool_type === "pdf_canvas") {
@@ -725,6 +701,7 @@ async function initializeHTML() {
     document.execCommand("insertHTML", false, text);
   });
 
+  // split.js設定
   if (sat.tool_type !== "pdf_canvas") {
     // flexboxをresizableに
     Split(["#content", "#comment_container"], {
@@ -753,6 +730,33 @@ async function initializeHTML() {
       },
       gutterSize: 5,
     });
+  }
+
+  // マーカー色設定などのロード
+  if (
+    (
+      document.getElementById("dark_mode")! as HTMLInputElement
+    ).checked.toString() !== localStorage.getItem("SAT_dark_mode")
+  ) {
+    document.getElementById("dark_mode")!.click();
+  }
+  if (
+    (
+      document.getElementById("block_mode")! as HTMLInputElement
+    ).checked.toString() !== localStorage.getItem("SAT_block_mode")
+  ) {
+    document.getElementById("block_mode")!.click();
+  }
+  let highlight_color: string | null, comment_color: string | null;
+  if ((highlight_color = localStorage.getItem("SAT_highlight_color"))) {
+    const btn_highlight = document.getElementById("btn_highlight")!;
+    btn_highlight.setAttribute("highlightColor", highlight_color);
+    btn_highlight.style.backgroundColor = highlight_color;
+  }
+  if ((comment_color = localStorage.getItem("SAT_comment_color"))) {
+    const btn_comment = document.getElementById("btn_comment")!;
+    btn_comment.setAttribute("commentColor", comment_color);
+    btn_comment.style.backgroundColor = comment_color;
   }
 
   if (sat.tool_type === "tazumen") {
@@ -786,6 +790,7 @@ async function initializeHTML() {
     addZumenEventHandler();
   }
 
+  //
   if (
     sat.tool_type === "tazumen" &&
     document.getElementById("content")!.innerHTML === "tazumen_gyomu"
@@ -862,9 +867,9 @@ async function downloadHTML() {
       "value",
       (html.querySelector("#doc_title")! as HTMLInputElement).value
     );
-  if ((html.querySelector("#dark_mode")! as HTMLInputElement).checked) {
-    html.querySelector("#dark_mode")!.setAttribute("checked", "");
-  }
+  // if ((html.querySelector("#dark_mode")! as HTMLInputElement).checked) {
+  //   html.querySelector("#dark_mode")!.setAttribute("checked", "");
+  // }
   if ((html.querySelector("#block_mode")! as HTMLInputElement).checked) {
     html.querySelector("#block_mode")!.setAttribute("checked", "");
   }
@@ -1009,7 +1014,7 @@ function decorate(class_name: string) {
  * 選択された領域のハイライト
  */
 function highlight() {
-  const color = document
+  const color_code = document
     .getElementById("btn_highlight")!
     .getAttribute("highlightColor")!;
 
@@ -1023,7 +1028,7 @@ function highlight() {
   ) {
     return;
   }
-  sat.decoration.highlight(color);
+  sat.decoration.highlight(color_code);
   sat.updated = true;
 }
 
@@ -1038,6 +1043,10 @@ function dehighlight() {
  * 選択された領域へのコメントを追加
  */
 function comment() {
+  const color_code = document
+    .getElementById("btn_comment")!
+    .getAttribute("commentColor")!;
+
   const selection = sat.content_window.getSelection();
   if (!selection) return;
 
@@ -1071,7 +1080,7 @@ function comment() {
     }
   }
 
-  sat.comment.addComment();
+  sat.comment.addComment(color_code);
 
   sat.updated = true;
 }
@@ -1209,28 +1218,32 @@ function colorPickerMouseOver(color_code: string) {
       .getElementById("color_picker")!
       .getAttribute("comment_id");
 
-    const comment_div = document
-      .getElementById("comment_div")!
-      .querySelector<HTMLDivElement>(
-        `div.comment[comment_id="${comment_id}"]`
-      )!;
+    if (comment_id) {
+      const comment_div = document
+        .getElementById("comment_div")!
+        .querySelector<HTMLDivElement>(
+          `div.comment[comment_id="${comment_id}"]`
+        )!;
 
-    const polygon_element = document
-      .getElementById("comment_svg")!
-      .querySelector<SVGPolygonElement>(`polygon[comment_id="${comment_id}"]`)!;
+      const polygon_element = document
+        .getElementById("comment_svg")!
+        .querySelector<SVGPolygonElement>(
+          `polygon[comment_id="${comment_id}"]`
+        )!;
 
-    const commented_span_arr = document.querySelectorAll<HTMLSpanElement>(
-      `span.commented[comment_id="${comment_id}"]`
-    );
+      const commented_span_arr = document.querySelectorAll<HTMLSpanElement>(
+        `span.commented[comment_id="${comment_id}"]`
+      );
 
-    comment_div.style.backgroundColor = color_code;
-    comment_div.style.borderColor = color_code;
-    polygon_element.style.fill = color_code;
-    polygon_element.style.stroke = color_code;
-    commented_span_arr.forEach((span) => {
-      span.style.backgroundColor = color_code;
-      span.style.borderColor = color_code;
-    });
+      comment_div.style.backgroundColor = color_code;
+      comment_div.style.borderColor = color_code;
+      polygon_element.style.fill = color_code;
+      polygon_element.style.stroke = color_code;
+      commented_span_arr.forEach((span) => {
+        span.style.backgroundColor = color_code;
+        span.style.borderColor = color_code;
+      });
+    }
   } else {
     const color_id = document
       .getElementById("color_picker")!
@@ -1259,28 +1272,33 @@ function colorPickerMouseOut() {
     const comment_id = document
       .getElementById("color_picker")!
       .getAttribute("comment_id");
-    const comment_div = document
-      .getElementById("comment_div")!
-      .querySelector<HTMLDivElement>(
-        `div.comment[comment_id="${comment_id}"]`
-      )!;
-    const polygon_element = document
-      .getElementById("comment_svg")!
-      .querySelector<SVGPolygonElement>(`polygon[comment_id="${comment_id}"]`)!;
-    const commented_span_arr = document.querySelectorAll<HTMLSpanElement>(
-      `span.commented[comment_id="${comment_id}"]`
-    );
-    let color_code = document
-      .getElementById("color_picker")!
-      .getAttribute("comment_color")!;
-    comment_div.style.backgroundColor = color_code;
-    comment_div.style.borderColor = color_code;
-    polygon_element.style.fill = color_code;
-    polygon_element.style.stroke = color_code;
-    commented_span_arr.forEach((span) => {
-      span.style.backgroundColor = color_code;
-      span.style.borderColor = color_code;
-    });
+
+    if (comment_id) {
+      const comment_div = document
+        .getElementById("comment_div")!
+        .querySelector<HTMLDivElement>(
+          `div.comment[comment_id="${comment_id}"]`
+        )!;
+      const polygon_element = document
+        .getElementById("comment_svg")!
+        .querySelector<SVGPolygonElement>(
+          `polygon[comment_id="${comment_id}"]`
+        )!;
+      const commented_span_arr = document.querySelectorAll<HTMLSpanElement>(
+        `span.commented[comment_id="${comment_id}"]`
+      );
+      let color_code = document
+        .getElementById("color_picker")!
+        .getAttribute("comment_color")!;
+      comment_div.style.backgroundColor = color_code;
+      comment_div.style.borderColor = color_code;
+      polygon_element.style.fill = color_code;
+      polygon_element.style.stroke = color_code;
+      commented_span_arr.forEach((span) => {
+        span.style.backgroundColor = color_code;
+        span.style.borderColor = color_code;
+      });
+    }
   } else {
     const color_id = document
       .getElementById("color_picker")!
@@ -1305,17 +1323,17 @@ function colorPickerClick(color_code: string) {
 
   const mode = document.getElementById("color_picker")!.getAttribute("mode");
   if (mode === "highlight") {
+    localStorage.setItem("SAT_highlight_color", color_code);
     const btn_highlight = document.getElementById("btn_highlight")!;
     btn_highlight.setAttribute("highlightColor", color_code);
     btn_highlight.style.backgroundColor = color_code;
   } else if (mode === "comment") {
+    localStorage.setItem("SAT_comment_color", color_code);
     document.getElementById("btn_comment")!.style.backgroundColor = color_code;
-    document.getElementById("comment_color")!.innerText = color_code;
-
-    sat.comment.background_color = color_code;
     document
-      .getElementById("color_picker")!
-      .setAttribute("comment_color", color_code);
+      .getElementById("btn_comment")!
+      .setAttribute("commentColor", color_code);
+    document.getElementById("color_picker")!.setAttribute("comment_id", "");
     sat.cv.updateData();
     sat.cv.draw();
   } else {
@@ -1379,9 +1397,9 @@ function setDataFromTazumenBrowser(data: any) {
 
     const img = document.createElement("img");
     img.src = zumen.data_url;
-    if ((document.getElementById("dark_mode")! as HTMLInputElement).checked) {
-      img.classList.add("dark");
-    }
+    // if ((document.getElementById("dark_mode")! as HTMLInputElement).checked) {
+    //   img.classList.add("dark");
+    // }
     container.appendChild(img);
 
     const memo = document.createElement("div");

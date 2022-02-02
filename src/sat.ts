@@ -26,7 +26,6 @@ export class Sat {
     content_window: Window,
     cv: HTMLCanvasElement,
     selected_color: { [key: string]: string },
-    comment_color: string,
     dark_mode: boolean,
     block_mode: boolean
   ) {
@@ -37,7 +36,7 @@ export class Sat {
 
     this.word = new SatWord(this, selected_color, block_mode);
     this.cv = new SatCanvas(this, cv);
-    this.comment = new SatComment(this, comment_color);
+    this.comment = new SatComment(this);
     this.decoration = new SatDecoration(this);
     // this.pdf = new SatPDF(this);
   }
@@ -364,7 +363,7 @@ class SatWord {
     const colors: string[] = [];
     const step = 360 / length;
     const l = this.sat.dark_mode ? 0.3 : 0.7;
-    for (let i = 1; i <= length; i++) {
+    for (let i = 0; i < length; i++) {
       // 適当に設定
       colors.push(this.sat.hslToRgb((270 + i * step) % 360, 1.0, l));
     }
@@ -387,7 +386,7 @@ class SatCanvas {
   element: HTMLCanvasElement;
   word_rect: Rect[] = [];
   comment_circle: { y: number; color: string }[] = [];
-  highlight_circle: { y: number; color: string }[] = [];
+  highlight_rect: { y: number; color: string }[] = [];
   constructor(sat: Sat, element: HTMLCanvasElement) {
     this.sat = sat;
     this.element = element;
@@ -533,17 +532,18 @@ class SatCanvas {
     });
 
     // ハイライト部分の●の位置を更新
-    this.highlight_circle = [];
+    this.highlight_rect = [];
     Array.from(
       document.querySelectorAll<HTMLSpanElement>("span.highlighted")
     ).forEach((span) => {
-      this.highlight_circle.push({
+      this.highlight_rect.push({
         y:
           this.element.height *
-          (this.sat.getOffset(
+          ((this.sat.getOffset(
             span,
             this.sat.content_root.offsetParent as HTMLElement
-          ).offset_top /
+          ).offset_top -
+            3) /
             span_parent_height),
         color: span.style.backgroundColor,
       });
@@ -575,18 +575,10 @@ class SatCanvas {
         ctx.fill();
       }
     );
-
-    this.highlight_circle.forEach(
-      (highlight_circle: { y: number; color: string }): void => {
-        ctx.fillStyle = highlight_circle.color;
-        ctx.beginPath();
-        ctx.arc(25, highlight_circle.y, 5, 0, 2 * Math.PI, false);
-        ctx.fill();
-
-        ctx.fillStyle = "#333333";
-        ctx.beginPath();
-        ctx.arc(25, highlight_circle.y, 2, 0, 2 * Math.PI, false);
-        ctx.fill();
+    this.highlight_rect.forEach(
+      (highlight_rect: { y: number; color: string }): void => {
+        ctx.fillStyle = highlight_rect.color;
+        ctx.fillRect(20, highlight_rect.y - 5, 10, 10);
       }
     );
 
@@ -724,7 +716,6 @@ class SatDecoration {
 
 class SatComment {
   sat: Sat;
-  background_color: string;
   comment_index: number = 0;
   span_info: {
     [comment_id: string]: {
@@ -744,13 +735,12 @@ class SatComment {
     polygon: SVGPolygonElement;
   }[] = [];
 
-  constructor(sat: Sat, comment_color: string) {
+  constructor(sat: Sat) {
     this.sat = sat;
-    this.background_color = comment_color;
   }
-  addComment = (): void => {
-    const comment_id = this.addSpan();
-    this.addBox(comment_id);
+  addComment = (color_code: string): void => {
+    const comment_id = this.addSpan(color_code);
+    this.addBox(comment_id, color_code);
     this.sort();
     this.arrange();
 
@@ -801,7 +791,7 @@ class SatComment {
     delete this.box_info[comment_id];
   };
 
-  addSpan = (): string => {
+  addSpan = (color_code: string): string => {
     createClassApplier("commented", {
       elementTagName: "span",
       normalize: true,
@@ -829,8 +819,8 @@ class SatComment {
     added_span_elements.forEach((span) => {
       span.setAttribute("comment_id", comment_id.toString());
       // if (!span.classList.contains("highlighted")) {
-      span.style.backgroundColor = this.background_color;
-      span.style.borderColor = this.background_color;
+      span.style.backgroundColor = color_code;
+      span.style.borderColor = color_code;
       // }
 
       const offset = this.sat.getOffset(
@@ -871,7 +861,7 @@ class SatComment {
     return comment_id.toString();
   };
 
-  addBox = (comment_id: string): void => {
+  addBox = (comment_id: string, color_code: string): void => {
     const p_element = document.createElement("p");
     if (this.sat.tool_type === "pdf_canvas") {
       if (this.box_info[comment_id]) {
@@ -895,8 +885,8 @@ class SatComment {
     comment_div_element.contentEditable = "true";
     comment_div_element.id = comment_id;
     comment_div_element.setAttribute("comment_id", comment_id);
-    comment_div_element.style.backgroundColor = this.background_color;
-    comment_div_element.style.borderColor = this.background_color;
+    comment_div_element.style.backgroundColor = color_code;
+    comment_div_element.style.borderColor = color_code;
     comment_div_element.appendChild(p_element);
     document.getElementById("comment_div")!.appendChild(comment_div_element);
 
@@ -906,8 +896,8 @@ class SatComment {
       "polygon"
     );
     polygon.setAttribute("comment_id", comment_id);
-    polygon.style.fill = this.background_color;
-    polygon.style.stroke = this.background_color;
+    polygon.style.fill = color_code;
+    polygon.style.stroke = color_code;
     document
       .getElementById("comment_svg")!
       .querySelector("svg")!
@@ -1149,155 +1139,3 @@ class SatComment {
     }
   };
 }
-
-// class SatPDF {
-//   sat: Sat;
-//   file_name: string = "";
-//   constructor(sat: Sat) {
-//     this.sat = sat;
-//   }
-
-//   memorize = (class_name: string) => {
-//     console.log(`memorize ${class_name}`);
-//     const added_elements: HTMLElement[] = getSelection(this.sat.content_window)
-//       .getRangeAt(0)
-//       .getNodes([], (node: any) => {
-//         return node.classList && node.classList.contains(class_name);
-//       });
-//     console.log(added_elements);
-
-//     added_elements.forEach((element) => {
-//       let offset = 0;
-//       let node = element;
-//       while (!node.getAttribute || node.getAttribute("style") === null) {
-//         if (node.nodeName === "#text") {
-//           offset += node.textContent!.length;
-//         }
-//         if (node.previousSibling) {
-//           node = node.previousSibling as HTMLElement;
-//         } else {
-//           node = node.parentNode as HTMLElement;
-//         }
-//       }
-//       const selector_arr = this.sat.getSelectorFromElement(element);
-//       const info = {
-//         selector: selector_arr.slice(0, 4).join(" > "),
-//         page_number: Number(selector_arr[1]!.slice(-2, -1)),
-//         class_name: class_name,
-//         start: offset,
-//         length: element.textContent!.length,
-//       };
-//       if (class_name === "commented") {
-//         const comment_id = Number(element.getAttribute("comment_id"));
-//         if (!this.sat.comment.span_info[comment_id]) {
-//           this.sat.comment.span_info[comment_id] = [info];
-//         } else {
-//           this.sat.comment.span_info[comment_id]!.push(info);
-//         }
-//       } else {
-//         // this.sat.decoration.element_info.push(info);
-//       }
-//     });
-//   };
-
-//   // PDFの読み込みや拡大縮小時に要素を再付与
-//   restore = (page_number: number) => {
-//     // コメント(span）の作成
-//     for (const comment_id in this.sat.comment.span_info) {
-//       this.sat.comment.span_info[comment_id]!.filter((span) => {
-//         return span.page_number === page_number;
-//       }).forEach((span) => {
-//         const mark_instance = new Mark(
-//           this.sat.content_root.querySelector(span.selector)
-//         );
-//         const mark_options = {
-//           element: "span",
-//           acrossElements: true,
-//           each: (added_span: HTMLSpanElement) => {
-//             added_span.classList.add(span.class_name);
-//             added_span.setAttribute("comment_id", comment_id);
-
-//             const offset = this.sat.getOffset(
-//               added_span,
-//               this.sat.content_root.offsetParent as HTMLElement
-//             );
-//             added_span.setAttribute("offset_top", offset.offset_top.toString());
-//             added_span.setAttribute(
-//               "offset_left",
-//               offset.offset_left.toString()
-//             );
-
-//             // イベントハンドラ追加
-//             added_span.addEventListener("mouseover", (e) => {
-//               this.sat.comment.onMouseOver(
-//                 added_span.getAttribute("comment_id")!
-//               );
-//             });
-//             added_span.addEventListener("mouseout", (e) => {
-//               // 子要素への移動であれば無視
-//               if (
-//                 e.relatedTarget instanceof HTMLElement &&
-//                 e.relatedTarget.parentElement !== null &&
-//                 e.relatedTarget.parentElement.closest(
-//                   `span.commented[comment_id="${added_span.getAttribute(
-//                     "comment_id"
-//                   )}"]`
-//                 ) !== null
-//               ) {
-//                 return;
-//               }
-//               this.sat.comment.onMouseOut(
-//                 added_span.getAttribute("comment_id")!
-//               );
-//             });
-//           },
-//         };
-//         mark_instance.markRanges(
-//           [{ start: span.start, length: span.length }],
-//           mark_options
-//         );
-//       });
-//     }
-
-//     // コメント(div, svg）の作成
-//     for (const comment_id in this.sat.comment.box_info) {
-//       if (this.sat.comment.box_info[comment_id]!.page_number === page_number) {
-//         this.sat.comment.addBox(comment_id);
-//       }
-//     }
-//     this.sat.comment.sort();
-//     this.sat.comment.arrange();
-
-//     // decorationの作成 -> 実現の見通しが立たないのでコメントアウト
-//     // this.sat.decoration.element_info
-//     //   .filter((element) => {
-//     //     return element.page_number === page_number;
-//     //   })
-//     //   .forEach((element) => {
-//     //     const mark_instance = new Mark(
-//     //       this.sat.content_root.querySelector(element.selector)
-//     //     );
-//     //     let mark_options = {
-//     //       element: "span",
-//     //       acrossElements: true,
-//     //       each: (added_element: HTMLSpanElement) => {
-//     //         added_element.classList.add(element.class_name);
-//     //       },
-//     //     };
-//     //     mark_instance.markRanges(
-//     //       [{ start: element.start, length: element.length }],
-//     //       mark_options
-//     //     );
-//     //   });
-//   };
-
-//   init = () => {
-//     this.sat.cv.word_rect = [];
-//     this.sat.cv.comment_circle = [];
-//     this.sat.cv.highlight_circle = [];
-//     // this.sat.decoration.element_info = [];
-//     this.sat.comment.span_info = {};
-//     this.sat.comment.box_info = {};
-//     this.sat.comment.box_sorted_info = [];
-//   };
-// }
