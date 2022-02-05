@@ -362,10 +362,10 @@ class SatWord {
 
     const colors: string[] = [];
     const step = 360 / length;
-    const l = this.sat.dark_mode ? 0.3 : 0.7;
+    const l = this.sat.dark_mode ? 0.35 : 0.7;
     for (let i = 0; i < length; i++) {
       // 適当に設定
-      colors.push(this.sat.hslToRgb((270 + i * step) % 360, 1.0, l));
+      colors.push(this.sat.hslToRgb((0 + i * step) % 360, 1.0, l));
     }
 
     return colors;
