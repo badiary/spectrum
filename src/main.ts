@@ -819,6 +819,7 @@ async function initializeHTML() {
       case "tazumen":
         if (e.origin === "http://npsx8.jpo.go.jp") {
           setDataFromTazumenBrowser(e.data);
+          sat.updated = true;
         }
         break;
 
