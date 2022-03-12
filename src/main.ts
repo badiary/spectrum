@@ -11,11 +11,12 @@ let sat: sat_modules.Sat;
  */
 
 window.addEventListener("load", async () => {
-  const tool_type = document.getElementById("tool_type")!.innerText;
+  const tool_type = document.getElementById("tool_type")!
+    .innerText as sat_modules.toolType;
 
   // content_root, content_window設定
   let content_root, content_window;
-  if (tool_type === "pdf_canvas") {
+  if (tool_type === "pdf") {
     // @ts-ignore
     window.decoratePage = decoratePage;
 
@@ -85,7 +86,7 @@ function setKeyboardPreference() {
     return true; // contenteditableな要素の中でもショートカットを有効にする
   };
 
-  if (sat.tool_type === "free_text") {
+  if (sat.tool_type === "free_text" || sat.tool_type === "tazumen") {
     hotkeys("ctrl+b", (event: Event, _handler: any) => {
       event.preventDefault();
       decorate("bold");
@@ -94,30 +95,26 @@ function setKeyboardPreference() {
       event.preventDefault();
       decorate("underline");
     });
+    hotkeys("ctrl+h", (event: Event, _handler: any) => {
+      event.preventDefault();
+      highlight();
+      sat.content_window.getSelection()?.removeAllRanges();
+    });
+    hotkeys("ctrl+d", (event: Event, _handler: any) => {
+      event.preventDefault();
+      dehighlight();
+      sat.content_window.getSelection()?.removeAllRanges();
+    });
+    hotkeys("ctrl+1", (event: Event, _handler: any) => {
+      event.preventDefault();
+      comment();
+    });
+    hotkeys("ctrl+s", (event: Event, _handler: any) => {
+      event.preventDefault();
+      showSpinner("ダウンロードファイル生成中...", 150, downloadHTML);
+    });
   }
 
-  hotkeys("ctrl+h", (event: Event, _handler: any) => {
-    event.preventDefault();
-    highlight();
-    sat.content_window.getSelection()?.removeAllRanges();
-  });
-  hotkeys("ctrl+d", (event: Event, _handler: any) => {
-    event.preventDefault();
-    dehighlight();
-    sat.content_window.getSelection()?.removeAllRanges();
-  });
-  hotkeys("ctrl+1", (event: Event, _handler: any) => {
-    event.preventDefault();
-    comment();
-  });
-  hotkeys("ctrl+s", (event: Event, _handler: any) => {
-    event.preventDefault();
-    if (sat.tool_type === "pdf_canvas") {
-      // showSpinner("ダウンロードファイル生成中...", 150, downloadJSON);
-    } else {
-      showSpinner("ダウンロードファイル生成中...", 150, downloadHTML);
-    }
-  });
   hotkeys("ctrl+shift+f", (event: Event, _handler: any) => {
     event.preventDefault();
     function setCaretToEnd(target: HTMLElement) {
@@ -275,7 +272,7 @@ async function initializeHTML() {
   );
 
   // スペクトルバー関連
-  if (sat.tool_type === "pdf_canvas") {
+  if (sat.tool_type === "pdf") {
     sat.content_root.parentElement!.addEventListener("scroll", (e: any) => {
       sat.cv.draw();
       const comment_container = document.getElementById("comment_container")!;
@@ -309,7 +306,7 @@ async function initializeHTML() {
   });
 
   sat.cv.element.onclick = (e: any) => {
-    if (sat.tool_type === "pdf_canvas") {
+    if (sat.tool_type === "pdf") {
       sat.content_root.parentElement!.scrollTo(
         0,
         e.layerY *
@@ -331,7 +328,7 @@ async function initializeHTML() {
   };
   sat.cv.element.onmousedown = (e) => {
     sat.cv.element.onmousemove = (e: any) => {
-      if (sat.tool_type === "pdf_canvas") {
+      if (sat.tool_type === "pdf") {
         sat.content_root.parentElement!.scrollTo(
           0,
           e.layerY *
@@ -385,9 +382,7 @@ async function initializeHTML() {
     } else {
       if (sat.tool_type === "free_text") {
         document.title = "SAT（フリーテキスト版）";
-      } else if (sat.tool_type === "pdf_canvas") {
-        document.title = "SAT（PDF版）";
-      } else if (sat.tool_type === "pdf_svg") {
+      } else if (sat.tool_type === "pdf") {
         document.title = "SAT（PDF版）";
       } else {
         document.title = "SAT (Spectrum Annotation Tool)";
@@ -574,7 +569,7 @@ async function initializeHTML() {
       sat.dark_mode = false;
     }
 
-    if (sat.tool_type === "pdf_canvas") {
+    if (sat.tool_type === "pdf") {
       if (e.target.checked) {
         sat.content_window.document.body.classList.add("dark");
       } else {
@@ -702,7 +697,7 @@ async function initializeHTML() {
   });
 
   // split.js設定
-  if (sat.tool_type !== "pdf_canvas") {
+  if (sat.tool_type !== "pdf") {
     // flexboxをresizableに
     Split(["#content", "#comment_container"], {
       sizes: [70, 30],

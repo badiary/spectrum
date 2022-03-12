@@ -2,13 +2,14 @@ import { getSelection } from "../node_modules/rangy2/bundles/index.umd";
 import { createClassApplier } from "../node_modules/rangy-classapplier/bundles/index.umd";
 import Mark from "../node_modules/mark.js/dist/mark";
 
+export type toolType = "free_text" | "tazumen" | "pdf" | "web";
 export type WordOption = {
   words: string[];
   color: string;
 };
 
 export class Sat {
-  tool_type: string; // フリーテキスト版、PDF版などを指定
+  tool_type: toolType; // フリーテキスト版、PDF版などを指定
   content_root: HTMLElement; // コンテンツを含む要素を指定
   content_window: Window; // コンテンツを含むウィンドウを指定（PDF版はiframeのwindowになる）
   dark_mode: boolean;
@@ -21,7 +22,7 @@ export class Sat {
   // pdf: SatPDF; // PDF版の特別な処理を扱うオブジェクト
 
   constructor(
-    tool_type: string,
+    tool_type: toolType,
     content_root: HTMLElement,
     content_window: Window,
     cv: HTMLCanvasElement,
@@ -261,7 +262,7 @@ class SatWord {
     colorStyle_pdf_parent.id = "SAT_word_inversion";
 
     this.sat.content_window.document.head.prepend(colorStyle);
-    if (this.sat.tool_type === "pdf_canvas") {
+    if (this.sat.tool_type === "pdf") {
       document.head.prepend(colorStyle_pdf_parent);
     }
 
@@ -271,13 +272,13 @@ class SatWord {
 
       colorStyle.sheet!.insertRule(
         `span.word_inversion_class${color_id} {background-color: ${color_code} !important; color: ${
-          this.sat.tool_type === "pdf_canvas"
+          this.sat.tool_type === "pdf"
             ? color_code
             : this.calcWordColor(color_code)
         }}`,
         0
       );
-      if (this.sat.tool_type === "pdf_canvas") {
+      if (this.sat.tool_type === "pdf") {
         colorStyle_pdf_parent.sheet!.insertRule(
           `span.word_inversion_class${color_id} {background-color: ${color_code} ! important; color: ${this.calcWordColor(
             color_code
@@ -348,7 +349,7 @@ class SatWord {
       preexisting_style.remove();
     }
 
-    if (this.sat.tool_type === "pdf_canvas") {
+    if (this.sat.tool_type === "pdf") {
       preexisting_style = document.head.querySelector(
         "style#SAT_word_inversion"
       );
@@ -423,9 +424,7 @@ class SatCanvas {
         window.getComputedStyle(span).backgroundColor
       );
       const left_offset =
-        this.sat.tool_type === "web" || this.sat.tool_type === "pdf_canvas"
-          ? 0
-          : 35;
+        this.sat.tool_type === "web" || this.sat.tool_type === "pdf" ? 0 : 35;
       const rect_x =
         left_offset +
         (this.element.width - left_offset) *
@@ -553,7 +552,7 @@ class SatCanvas {
   draw = () => {
     const ctx = this.element.getContext("2d")!;
     ctx.clearRect(0, 0, this.element.width, this.element.height);
-    if (this.sat.tool_type === "web" || this.sat.tool_type === "pdf_canvas") {
+    if (this.sat.tool_type === "web" || this.sat.tool_type === "pdf") {
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, 200, window.innerHeight);
     } else {
@@ -585,7 +584,7 @@ class SatCanvas {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 5;
     let scroll_div: HTMLElement;
-    if (this.sat.tool_type === "pdf_canvas") {
+    if (this.sat.tool_type === "pdf") {
       scroll_div = this.sat.content_root.parentElement as HTMLElement;
     } else if (this.sat.tool_type === "web") {
       // @ts-ignore
@@ -854,7 +853,7 @@ class SatComment {
       });
     });
 
-    // if (this.sat.tool_type === "pdf_canvas") {
+    // if (this.sat.tool_type === "pdf") {
     //   this.sat.pdf.memorize("commented");
     // }
 
@@ -863,7 +862,7 @@ class SatComment {
 
   addBox = (comment_id: string, color_code: string): void => {
     const p_element = document.createElement("p");
-    if (this.sat.tool_type === "pdf_canvas") {
+    if (this.sat.tool_type === "pdf") {
       if (this.box_info[comment_id]) {
         p_element.innerText = this.box_info[comment_id]!.content;
       } else {
