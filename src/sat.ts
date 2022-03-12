@@ -298,10 +298,10 @@ class SatWord {
           let reg_ex: RegExp;
           if (this.block_mode) {
             reg_ex = new RegExp(
-              `[ア-ンー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*${word.slice(
+              `[ァ-ヶｦ-ﾟー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*${word.slice(
                 1,
                 -1
-              )}[ア-ンー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*`,
+              )}[ァ-ヶｦ-ﾟー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*`,
               re_option
             );
           } else {
@@ -312,7 +312,7 @@ class SatWord {
           // 正規表現でない場合
           if (this.block_mode) {
             const reg_ex = new RegExp(
-              `[ア-ンー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*${word}[ア-ンー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*`,
+              `[ァ-ヶｦ-ﾟー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*${word}[ァ-ヶｦ-ﾟー一-龥0-9０-９a-zA-Zａ-ｚＡ-Ｚ.．]*`,
               "i"
             );
             mark_instance.markRegExp(reg_ex, mark_options);
