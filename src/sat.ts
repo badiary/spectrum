@@ -1145,7 +1145,7 @@ class SatTazumen {
     this.sat = sat;
   }
 
-  extractFugo_ja = (text: String): void => {
+  extractFugo_ja = (text: string): void => {
     // let sentence = document.getElementById("content").innerText;
 
     // 段落０００１以降の文章に（可能であれば）限定
@@ -1172,6 +1172,8 @@ class SatTazumen {
     let diff_result = this.diffArray(result_sort, anti_sort_result);
 
     let words = diff_result;
+
+    this.fugo_dic = {};
     words.forEach((word) => {
       let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
       let name = word.substring(0, mt.index);
@@ -1207,7 +1209,7 @@ class SatTazumen {
     else return 1;
   };
 
-  zen2Han = (strVal: String) => {
+  zen2Han = (strVal: string) => {
     //文字列を全角から半角にする
     var halfVal = strVal.replace(/[！-～]/g, function (tmpStr) {
       // 文字コードをシフト

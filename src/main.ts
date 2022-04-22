@@ -1627,10 +1627,10 @@ async function analyseFugo() {
     console.log(i, text.match(/[0-9]+[a-zA-Z]{0,3}/g));
     let fugo_text = text
       .match(/[0-9]+[a-zA-Z]{0,3}/g)
-      .filter((num: String) => {
-        return sat.tazumen.fugo_dic.num;
+      .filter((num: string) => {
+        return num in sat.tazumen.fugo_dic;
       })
-      .sort((a: String, b: String) => {
+      .sort((a: string, b: string) => {
         (a = String(a)), (b = String(b));
         if (a < b) {
           return -1;
@@ -1640,7 +1640,7 @@ async function analyseFugo() {
         }
         return 0;
       })
-      .map((num: String) => {
+      .map((num: string) => {
         return `${num} ${sat.tazumen.fugo_dic.num}`;
       })
       .join(",");
