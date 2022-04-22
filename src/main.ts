@@ -826,12 +826,15 @@ async function initializeHTML() {
       e.preventDefault();
       setDataFromTazumenBrowser(JSON.parse(paste_data));
 
+      let li_switch = document.getElementById(
+        "zumen_analysis_mode"
+      )! as HTMLInputElement;
       if (
-        (
-          document.getElementById("zumen_analysis_mode")! as HTMLInputElement
-        ).checked.toString() !== localStorage.getItem("SAT_zumen_analysis_mode")
+        li_switch.checked ||
+        li_switch.checked.toString() !==
+          localStorage.getItem("SAT_zumen_analysis_mode")
       ) {
-        document.getElementById("zumen_analysis_mode")!.click();
+        li_switch.click();
       }
     });
   }
@@ -843,15 +846,15 @@ async function initializeHTML() {
       case "tazumen":
         if (e.origin === "http://npsx8.jpo.go.jp") {
           setDataFromTazumenBrowser(e.data);
+          let li_switch = document.getElementById(
+            "zumen_analysis_mode"
+          )! as HTMLInputElement;
           if (
-            (
-              document.getElementById(
-                "zumen_analysis_mode"
-              )! as HTMLInputElement
-            ).checked.toString() !==
-            localStorage.getItem("SAT_zumen_analysis_mode")
+            li_switch.checked ||
+            li_switch.checked.toString() !==
+              localStorage.getItem("SAT_zumen_analysis_mode")
           ) {
-            document.getElementById("zumen_analysis_mode")!.click();
+            li_switch.click();
           }
           sat.updated = true;
         }
@@ -1689,7 +1692,14 @@ async function analyzeDiv(div: HTMLDivElement) {
 
   let fugo_text = fugo_arr
     .sort((a: string, b: string) => {
-      (a = String(a)), (b = String(b));
+      let num_a = Number(a.match(/[0-9]+/));
+      let num_b = Number(b.match(/[0-9]+/));
+      if (num_a < num_b) {
+        return -1;
+      }
+      if (num_a > num_b) {
+        return 1;
+      }
       if (a < b) {
         return -1;
       }
