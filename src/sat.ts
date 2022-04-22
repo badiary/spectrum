@@ -19,6 +19,7 @@ export class Sat {
   cv: SatCanvas; // スペクトルバーの描画を扱うオブジェクト
   decoration: SatDecoration; // マーカー、太字、下線の装飾を扱うオブジェクト
   comment: SatComment; // コメントを扱うオブジェクト
+  tazumen: SatTazumen;
   // pdf: SatPDF; // PDF版の特別な処理を扱うオブジェクト
 
   constructor(
@@ -39,6 +40,7 @@ export class Sat {
     this.cv = new SatCanvas(this, cv);
     this.comment = new SatComment(this);
     this.decoration = new SatDecoration(this);
+    this.tazumen = new SatTazumen(this);
     // this.pdf = new SatPDF(this);
   }
 
@@ -935,10 +937,6 @@ class SatComment {
       .getElementById("comment_div")!
       .querySelector(`div.comment[comment_id="${comment_id}"]`)
       ?.classList.add("div_onmouse");
-    // document
-    //   .getElementById("comment_svg")!
-    //   .querySelector(`polygon[comment_id="${comment_id}"]`)
-    //   ?.classList.add("polygon_onmouse");
 
     Array.from(
       this.sat.content_root.querySelectorAll(
@@ -953,10 +951,6 @@ class SatComment {
       .getElementById("comment_div")!
       .querySelector(`div.comment[comment_id="${comment_id}"]`)
       ?.classList.remove("div_onmouse");
-    // document
-    //   .getElementById("comment_svg")!
-    //   .querySelector(`polygon[comment_id="${comment_id}"]`)
-    //   ?.classList.remove("polygon_onmouse");
     Array.from(
       this.sat.content_root.querySelectorAll(
         `span.commented[comment_id="${comment_id}"]`
@@ -1098,14 +1092,18 @@ class SatComment {
       {}
     );
 
-    this.box_sorted_info = span_element_arr.map((span: HTMLSpanElement[]) => {
-      return {
-        comment_id: span[0]!.getAttribute("comment_id")!,
-        first_span: span[0]!,
-        div: div_elements[span[0]!.getAttribute("comment_id")!]!,
-        polygon: polygon_elements[span[0]!.getAttribute("comment_id")!]!,
-      };
-    });
+    this.box_sorted_info = span_element_arr
+      .filter((span: HTMLSpanElement[]) => {
+        return span.length > 0;
+      })
+      .map((span: HTMLSpanElement[]) => {
+        return {
+          comment_id: span[0]!.getAttribute("comment_id")!,
+          first_span: span[0]!,
+          div: div_elements[span[0]!.getAttribute("comment_id")!]!,
+          polygon: polygon_elements[span[0]!.getAttribute("comment_id")!]!,
+        };
+      });
   };
 
   // sort関数で生成されたthis.box_sorted_infoに従って、comment_boxのy方向の位置を調整
@@ -1136,5 +1134,96 @@ class SatComment {
         }`
       );
     }
+  };
+}
+
+class SatTazumen {
+  sat: Sat;
+  fugo_dic: { [fugo: string]: string } = {};
+
+  constructor(sat: Sat) {
+    this.sat = sat;
+  }
+
+  extractFugo_ja = (text: String): void => {
+    // let sentence = document.getElementById("content").innerText;
+
+    // 段落０００１以降の文章に（可能であれば）限定
+    let mt = text.match(/[【［\[](0001|０００１)[】］\]]/);
+    if (mt) {
+      text = text.substring(mt.index!);
+    }
+
+    //取得するパターンを定義。文字種別で雑にたくさん拾ってくる
+    let re_jp =
+      /([一-龠ア-ンァ-ヶＡ-Ｚー]{2,20})([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
+    //除外するパターンを定義。縦棒は半角なので、全角が入らないように注意
+    let re_anti_jp =
+      /([実施|実施例|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|丁目|ＪＰ|ＵＳ|ＷＯ|ＤＥ]{1,20})([0-9０-９]{0,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
+
+    let result = text.match(re_jp);
+    let u_result = this.removeRep(result);
+    let result_sort = u_result.sort(this.CompareForSort);
+
+    let anti_result = text.match(re_anti_jp);
+    let u_anti_result = this.removeRep(anti_result);
+    let anti_sort_result = u_anti_result.sort(this.CompareForSort);
+
+    let diff_result = this.diffArray(result_sort, anti_sort_result);
+
+    let words = diff_result;
+
+    this.fugo_dic = {};
+    words.forEach((word) => {
+      let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
+      let name = word.substring(0, mt.index);
+      let num = this.zen2Han(word.substring(mt.index));
+      this.fugo_dic[num] = name;
+    });
+  };
+
+  removeRep = (ary: any) => {
+    //unique配列にする
+    var temp = {},
+      res = [];
+    // @ts-ignore
+    for (var i = 0; i < ary.length; i++) temp[ary[i]] = i;
+    // @ts-ignore
+    for (key in temp) res.push(key);
+    return res;
+  };
+
+  diffArray = (arr1: any, arr2: any) => {
+    //配列の差分
+    var newArr = [];
+    for (var a = 0; a < arr1.length; a++) {
+      if (arr2.indexOf(arr1[a]) === -1) {
+        newArr.push(arr1[a]);
+      }
+    }
+    return newArr;
+  };
+
+  CompareForSort = (first: any, second: any) => {
+    //昇順
+    if (first == second) return 0;
+    if (first < second) return -1;
+    else return 1;
+  };
+
+  zen2Han = (strVal: String) => {
+    //文字列を全角から半角にする
+    var halfVal = strVal.replace(/[！-～]/g, function (tmpStr) {
+      // 文字コードをシフト
+      return String.fromCharCode(tmpStr.charCodeAt(0) - 0xfee0);
+    });
+
+    // 文字コードシフトで対応できない文字の変換
+    return halfVal
+      .replace(/”/g, '"')
+      .replace(/’/g, "'")
+      .replace(/‘/g, "`")
+      .replace(/￥/g, "\\")
+      .replace(/　/g, " ");
   };
 }

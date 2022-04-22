@@ -3,6 +3,7 @@ import * as sat_modules from "./sat";
 import { getSelection } from "../node_modules/rangy2/bundles/index.umd";
 import Split from "../node_modules/split.js/dist/split";
 import hotkeys from "../node_modules/hotkeys-js/dist/hotkeys";
+import Tesseract from "../node_modules/tesseract.js/dist/tesseract.min.js";
 
 let g_zumen_clicked = false;
 let sat: sat_modules.Sat;
@@ -804,6 +805,7 @@ async function initializeHTML() {
       modal.style.display = "none";
       e.preventDefault();
       setDataFromTazumenBrowser(JSON.parse(paste_data));
+      analyseFugo();
     });
   }
 
@@ -1458,11 +1460,26 @@ function addZumenEventHandler() {
           h3.style.height = "20px";
           zumen_subwin.document.body.append(h3);
 
+          // フレックボックス作成
+          let div_flex = document.createElement("div");
+          div_flex.style.display = "flex";
+          div_flex.style.width = "80%";
+          div_flex.style.height = "90%";
+          div_flex.style.margin = "auto";
+
+          // 符号テキスト部作成
+          let div_fugo = document.createElement("div");
+          div_fugo.innerHTML = (
+            e.target.querySelector("p.fugo")! as HTMLParagraphElement
+          ).innerText.replace(",", "<br>");
+          div_flex.appendChild(div_fugo);
+
           // 画像設定
-          const img_div = document.createElement("div");
-          img_div.style.width = "90%";
-          img_div.style.height = "90%";
-          img_div.style.textAlign = "center";
+          const div_img = document.createElement("div");
+          div_img.style.width = "100%";
+          div_img.style.height = "95%";
+          div_img.style.textAlign = "center";
+          div_img.style.margin = "auto";
           const img_clone = e.target.cloneNode() as HTMLImageElement;
           img_clone.style.objectFit = "contain";
           img_clone.style.width = "90%";
@@ -1472,8 +1489,9 @@ function addZumenEventHandler() {
             zumen_subwin.document.body.style.backgroundColor = "#333";
             img_clone.style.filter = "invert(100%)";
           }
-          img_div.appendChild(img_clone);
-          zumen_subwin.document.body.append(img_div);
+          div_img.appendChild(img_clone);
+          div_flex.appendChild(div_img);
+          zumen_subwin.document.body.append(div_flex);
 
           // 説明文設定
           if (e.target.parentElement!.querySelector("div.cap")) {
@@ -1566,96 +1584,81 @@ function rotateBase64Image90deg(base64Image: any) {
   // encode image to data-uri with base64
   return offScreenCanvas.toDataURL("image/jpeg", 100);
 }
-// @ts-ignore
-function invertImage() {
-  Array.from(document.getElementById("zumen")!.querySelectorAll("img")).forEach(
-    (img) => {
-      if (img.classList.contains("dark")) {
-        img.classList.remove("dark");
-      } else {
-        img.classList.add("dark");
-      }
+// // @ts-ignore
+// function invertImage() {
+//   Array.from(document.getElementById("zumen")!.querySelectorAll("img")).forEach(
+//     (img) => {
+//       if (img.classList.contains("dark")) {
+//         img.classList.remove("dark");
+//       } else {
+//         img.classList.add("dark");
+//       }
+//     }
+//   );
+// }
+
+async function analyseFugo() {
+  let li = document.getElementById("zumen_analysis")!;
+  sat.tazumen.extractFugo_ja(document.getElementById("content")!.innerText);
+
+  console.log("--- テキストからの符号データ抽出結果 ---");
+  console.log(sat.tazumen.fugo_dic);
+  console.log("--- 画像からの符号データ抽出結果 ---");
+  let zumen_divs = Array.from(document.querySelectorAll("#zumen > div"));
+  let finished_cnt = 0;
+
+  li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
+  zumen_divs.forEach(async (div, i) => {
+    const worker = Tesseract.createWorker();
+    await worker.load();
+    await worker.loadLanguage("eng");
+    await worker.initialize("eng");
+    await worker.setParameters({
+      tessedit_char_whitelist: "0123456789",
+    });
+    const {
+      data: { text },
+    } = await worker.recognize(div.querySelector("img"));
+
+    console.log(i, text.match(/[0-9]+[a-zA-Z]{0,3}/g));
+    let fugo_text = text
+      .match(/[0-9]+[a-zA-Z]{0,3}/g)
+      .filter((num: String) => {
+        return sat.tazumen.fugo_dic.num;
+      })
+      .sort((a: String, b: String) => {
+        (a = String(a)), (b = String(b));
+        if (a < b) {
+          return -1;
+        }
+        if (a > b) {
+          return 1;
+        }
+        return 0;
+      })
+      .map((num: String) => {
+        return `${num} ${sat.tazumen.fugo_dic.num}`;
+      })
+      .join(",");
+
+    let p = document.createElement("p");
+    p.style.display = "none";
+    p.classList.add("fugo");
+    p.innerText = fugo_text;
+    div.appendChild(p);
+
+    finished_cnt++;
+    if (finished_cnt === zumen_divs.length) {
+      li.innerText = "";
+    } else {
+      li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
     }
-  );
+  });
 }
 
 /*
  * ====================== PDF版関連 ======================
  */
-
-// /**
-//  * コメントなどの内容をJSONファイルとしてダウンロード
-//  */
-// async function downloadJSON() {
-//   const download_object = JSON.parse(
-//     JSON.stringify({
-//       word_option: sat.word.option,
-//       word_selected_color: sat.word.selected_color,
-//       word_query: document.getElementById("word_query")!.innerHTML,
-//       // decoration: sat.decoration.element_info,
-//       comment_span: sat.comment.span_info,
-//       comment_box: sat.comment.box_info,
-//     })
-//   );
-
-//   const blob = new Blob([JSON.stringify(download_object)], {
-//     type: "text/json",
-//   });
-//   const url = window.URL || window.webkitURL;
-//   const blobURL = url.createObjectURL(blob);
-
-//   // <a> を新たに作成し、ダウンロード用の設定をいろいろ
-//   const a = document.createElement("a");
-//   a.download = `${sat.pdf.file_name}.json`;
-//   a.href = blobURL;
-
-//   document.body.appendChild(a);
-//   a.click();
-//   document.body.removeChild(a);
-//   sat.updated = false;
-// }
-
-// /**
-//  * コメントなどの内容を含んだJSONデータのロード
-//  * @param {object} json_object ロードするJSONオブジェクト
-//  */
-// // @ts-ignore
-// function loadJSON(json_object: any) {
-//   sat.pdf.init();
-//   sat.word.option = json_object.word_option;
-//   sat.word.selected_color = json_object.word_selected_color;
-//   document.getElementById("word_query")!.innerHTML = json_object.word_query;
-//   // sat.decoration.element_info = json_object.decoration;
-//   sat.comment.span_info = json_object.comment_span;
-//   sat.comment.box_info = json_object.comment_box;
-// }
-
-// /**
-//  * PDFの読み込みや拡大縮小に合わせてコメント部分を調整
-//  */
-// // @ts-ignore
-// function updateCommentContainer() {
-//   if (!sat) return;
-//   const ifr = document.querySelector("iframe")!.contentWindow!.document;
-//   const ifr_scroll_height =
-//     ifr.getElementById("toolbarViewer")!.scrollHeight +
-//     ifr.getElementById("viewerContainer")!.scrollHeight;
-
-//   Array.from(
-//     document.getElementById("comment_div")!.querySelectorAll("div.comment")
-//   ).forEach((div) => {
-//     sat.comment.box_info[div.getAttribute("comment_id")!]!.content = (
-//       div as HTMLElement
-//     ).innerText;
-//   });
-//   sat.comment.box_sorted_info = [];
-//   const comment_svg = document.getElementById("comment_svg")!;
-//   const comment_div = document.getElementById("comment_div")!;
-//   (comment_svg.childNodes[0]! as HTMLElement).innerHTML = "";
-//   comment_svg.style.height = `${ifr_scroll_height}px`;
-//   comment_div.innerHTML = "";
-//   comment_div.style.height = `${ifr_scroll_height}px`;
-// }
 
 // @ts-ignore
 function decoratePage(page_number: number) {
@@ -1670,15 +1673,6 @@ function decoratePage(page_number: number) {
   sat.cv.draw();
 }
 
-// // @ts-ignore
-// function initPDFViewer() {
-//   sat.updated = false;
-//   (
-//     document.getElementById("comment_svg")!.childNodes[0]! as HTMLElement
-//   ).innerHTML = "";
-//   document.getElementById("comment_div")!.innerHTML = "";
-//   sat.pdf.init();
-// }
 /*
  * ====================== その他 ======================
  */

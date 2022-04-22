@@ -19,7 +19,8 @@
     "rangy-classapplier": "^2.1.0",
     "rangy2": "^2.1.0",
     "resize-sensor": "0.0.6",
-    "split.js": "^1.6.4"
+    "split.js": "^1.6.4",
+    "tesseract.js": "^2.1.1"
   },
   "devDependencies": {
     "ts-loader": "^9.2.6",
