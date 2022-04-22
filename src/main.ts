@@ -1641,6 +1641,9 @@ async function analyseFugo() {
         return 0;
       })
       .map((num: string) => {
+        console.log(sat.tazumen.fugo_dic);
+        console.log(num);
+        console.log(sat.tazumen.fugo_dic[num]);
         return `${num} ${sat.tazumen.fugo_dic[num]}`;
       })
       .join(",");
