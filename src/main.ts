@@ -1473,7 +1473,7 @@ function addZumenEventHandler() {
           if (e.target.parentElement!.querySelector("p.fugo")) {
             div_fugo.innerHTML = (
               e.target.parentElement!.querySelector("p.fugo") as HTMLElement
-            ).innerText.replace(",", "<br>");
+            ).innerText.replace(/,/g, "<br>");
           }
 
           div_flex.appendChild(div_fugo);
@@ -1641,7 +1641,7 @@ async function analyseFugo() {
         return 0;
       })
       .map((num: string) => {
-        return `${num} ${sat.tazumen.fugo_dic.num}`;
+        return `${num} ${sat.tazumen.fugo_dic[num]}`;
       })
       .join(",");
 
