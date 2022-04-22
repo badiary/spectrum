@@ -1172,8 +1172,6 @@ class SatTazumen {
     let diff_result = this.diffArray(result_sort, anti_sort_result);
 
     let words = diff_result;
-
-    this.fugo_dic = {};
     words.forEach((word) => {
       let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
       let name = word.substring(0, mt.index);
