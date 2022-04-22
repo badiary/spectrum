@@ -1688,7 +1688,7 @@ async function analyseFugo() {
 
   li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
   for (let i = 0; i < zumen_divs.length; i++) {
-    analyzeDiv(zumen_divs[i]!);
+    await analyzeDiv(zumen_divs[i]!);
     finished_cnt++;
     if (finished_cnt === zumen_divs.length) {
       li.innerText = "";
