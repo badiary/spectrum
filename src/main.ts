@@ -1508,14 +1508,40 @@ function addZumenEventHandler() {
           div_flex.style.margin = "auto";
 
           // 符号テキスト部作成
-          let div_fugo = document.createElement("div");
           if (e.target.parentElement!.querySelector("p.fugo")) {
-            div_fugo.innerHTML = (
-              e.target.parentElement!.querySelector("p.fugo") as HTMLElement
-            ).innerText.replace(/,/g, "<br>");
-          }
+            let div_fugo = document.createElement("div");
 
-          div_flex.appendChild(div_fugo);
+            let dl = document.createElement("dl");
+            dl.style.display = "flex";
+            dl.style.flexWrap = "wrap";
+            dl.style.width = "100%";
+
+            (
+              e.target.parentElement!.querySelector("p.fugo") as HTMLElement
+            ).innerText
+              .split(",")
+              .forEach((fugo_text) => {
+                let [fugo, term] = fugo_text.split("::");
+                let dt = document.createElement("dt");
+                dt.style.width = "20%";
+                dt.style.margin = "0";
+                dt.style.padding = "0";
+                dt.style.paddingBottom = "5px";
+                dt.innerText = fugo!;
+                dl.appendChild(dt);
+
+                let dd = document.createElement("dd");
+                dd.style.width = "20%";
+                dd.style.margin = "0";
+                dd.style.padding = "0";
+                dd.style.paddingBottom = "5px";
+                dd.innerText = term!;
+                dl.appendChild(dd);
+              });
+
+            div_fugo.appendChild(dl);
+            div_flex.appendChild(div_fugo);
+          }
 
           // 画像設定
           const div_img = document.createElement("div");
@@ -1711,7 +1737,7 @@ async function analyzeDiv(div: HTMLDivElement) {
       return 0;
     })
     .map((num: string) => {
-      return `${num} ${sat.tazumen.fugo_dic[num]}`;
+      return `${num}::${sat.tazumen.fugo_dic[num]}`;
     })
     .join(",");
 
