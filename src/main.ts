@@ -1673,6 +1673,8 @@ async function analyseFugo() {
 }
 
 async function analyzeDiv(div: HTMLDivElement) {
+  div.querySelector("h3")!.classList.remove("analysed");
+
   const worker = Tesseract.createWorker();
   await worker.load();
   await worker.loadLanguage("eng");
@@ -1722,8 +1724,7 @@ async function analyzeDiv(div: HTMLDivElement) {
   p.innerText = fugo_text;
   div.appendChild(p);
 
-  let h3 = div.querySelector("h3")!;
-  h3.innerHTML = h3.innerHTML + " ✓";
+  div.querySelector("h3")!.classList.add("analysed");
 }
 
 /*
