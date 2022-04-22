@@ -1470,9 +1470,12 @@ function addZumenEventHandler() {
 
           // 符号テキスト部作成
           let div_fugo = document.createElement("div");
-          div_fugo.innerHTML = (
-            e.target.querySelector("p.fugo")! as HTMLParagraphElement
-          ).innerText.replace(",", "<br>");
+          if (e.target.parentElement!.querySelector("p.fugo")) {
+            div_fugo.innerHTML = (
+              e.target.parentElement!.querySelector("p.fugo") as HTMLElement
+            ).innerText.replace(",", "<br>");
+          }
+
           div_flex.appendChild(div_fugo);
 
           // 画像設定
