@@ -1711,6 +1711,7 @@ async function analyzeDiv(div: HTMLDivElement) {
   const {
     data: { text },
   } = await worker.recognize(div.querySelector("img"));
+  await worker.terminate();
 
   console.log(text.match(/[0-9]+[a-zA-Z]{0,3}/g));
   let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g).filter((num: string) => {
