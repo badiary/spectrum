@@ -1222,7 +1222,11 @@ class SatTazumen {
 
         if (term_cnt === 1) {
           common_term = terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)
-            ? terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)![0]!
+            ? terms[0]!
+                .match(/^[^あ-ん\(\)]+/)![0]!
+                .split("")
+                .reverse()
+                .join("")
             : "";
         } else {
           // 一文字ずつループ
