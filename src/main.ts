@@ -1721,6 +1721,9 @@ async function analyzeDiv(div: HTMLDivElement) {
   }
   p.innerText = fugo_text;
   div.appendChild(p);
+
+  let h3 = div.querySelector("h3")!;
+  h3.innerHTML = h3.innerHTML + " ✓";
 }
 
 /*
