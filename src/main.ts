@@ -1531,7 +1531,7 @@ function addZumenEventHandler() {
                 dl.appendChild(dt);
 
                 let dd = document.createElement("dd");
-                dd.style.width = "20%";
+                dd.style.width = "80%";
                 dd.style.margin = "0";
                 dd.style.padding = "0";
                 dd.style.paddingBottom = "5px";
@@ -1688,12 +1688,14 @@ async function analyseFugo() {
 
   li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
   for (let i = 0; i < zumen_divs.length; i++) {
+    console.log(`図面解析中...(${i}番目)`);
     await analyzeDiv(zumen_divs[i]!);
     finished_cnt++;
     if (finished_cnt === zumen_divs.length) {
       li.innerText = "";
     } else {
       li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
+      console.log(`図面解析終了(${i}番目)`);
     }
   }
 }
