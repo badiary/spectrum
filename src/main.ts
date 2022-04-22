@@ -1508,7 +1508,11 @@ function addZumenEventHandler() {
           div_flex.style.margin = "auto";
 
           // 符号テキスト部作成
-          if (e.target.parentElement!.querySelector("p.fugo")) {
+          if (
+            e.target.parentElement!.querySelector("p.fugo") &&
+            (e.target.parentElement!.querySelector("p.fugo")! as HTMLElement)
+              .innerText !== ""
+          ) {
             let div_fugo = document.createElement("div");
 
             let dl = document.createElement("dl");
