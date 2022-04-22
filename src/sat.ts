@@ -1174,7 +1174,7 @@ class SatTazumen {
           " "
         );
       re_fugo_term =
-        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶA-Z][^0-9,，、。\s】]{0,19}[一-龠ア-ンァ-ヶA-Z])/g;
+        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶA-Z][^0-9,，、。\s】]{0,20})/g;
     } else {
       // 英語モード
 
@@ -1271,51 +1271,18 @@ class SatTazumen {
       })
       // 符号の辞書に登録
       .forEach((arr) => {
-        this.fugo_dic[arr[0]!] = arr[1]!.replace(/^\s/, "");
+        let fugo = arr[0]!;
+        let term = arr[1]!
+          .replace(/^\s/, "")
+          .replace(/^[てにをはのへ]([一-龠ア-ンァ-ヶA-Z0-9])/, "$1");
+        this.fugo_dic[fugo] = term;
       });
 
     // 符号として登場する文字を取得してホワイトリストを作る
     this.fugo_white_list = Array.from(
-      new Set(Object.keys(this.fugo_dic).join("").split(""))
+      new Set(["0123456789", ...Object.keys(this.fugo_dic)].join("").split(""))
     ).join("");
   };
-
-  // extractFugo_ja = (text: string): void => {
-  //   // let sentence = document.getElementById("content").innerText;
-
-  //   // 段落０００１以降の文章に（可能であれば）限定
-  //   let mt = text.match(/[【［\[](0001|０００１)[】］\]]/);
-  //   if (mt) {
-  //     text = text.substring(mt.index!);
-  //   }
-
-  //   //取得するパターンを定義。文字種別で雑にたくさん拾ってくる
-  //   let re_jp =
-  //     /([一-龠ア-ンァ-ヶＡ-Ｚー]{2,20})([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
-  //   //除外するパターンを定義。縦棒は半角なので、全角が入らないように注意
-  //   let re_anti_jp =
-  //     /([実施|実施例|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|丁目|ＪＰ|ＵＳ|ＷＯ|ＤＥ]{1,20})([0-9０-９]{0,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
-
-  //   let result = text.match(re_jp);
-  //   let u_result = this.removeRep(result);
-  //   let result_sort = u_result.sort(this.CompareForSort);
-
-  //   let anti_result = text.match(re_anti_jp);
-  //   let u_anti_result = this.removeRep(anti_result);
-  //   let anti_sort_result = u_anti_result.sort(this.CompareForSort);
-
-  //   let diff_result = this.diffArray(result_sort, anti_sort_result);
-
-  //   let words = diff_result;
-
-  //   this.fugo_dic = {};
-  //   words.forEach((word) => {
-  //     let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
-  //     let name = word.substring(0, mt.index);
-  //     let num = this.zen2Han(word.substring(mt.index));
-  //     this.fugo_dic[num] = name;
-  //   });
-  // };
 
   zen2Han = (strVal: string) => {
     //文字列を全角から半角にする
