@@ -1715,8 +1715,10 @@ async function analyzeDiv(div: HTMLDivElement) {
   } = await worker.recognize(div.querySelector("img"));
   await worker.terminate();
 
-  console.log(text.match(/[0-9]+[a-zA-Z]{0,3}/g));
-  let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g).filter((num: string) => {
+  let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g);
+  if (fugo_arr) fugo_arr = [];
+
+  fugo_arr.filter((num: string) => {
     return num in sat.tazumen.fugo_dic;
   });
   fugo_arr = Array.from(new Set(fugo_arr));
