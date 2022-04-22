@@ -1174,7 +1174,7 @@ class SatTazumen {
           " "
         );
       re_fugo_term =
-        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶA-Z][^0-9,，、。\s】]{0,20})/g;
+        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶa-zA-Z][^0-9,，、。\s】]{0,20})/g;
     } else {
       // 英語モード
 
@@ -1197,8 +1197,6 @@ class SatTazumen {
 
         // 符号ごとにまとめて連想配列に格納
         .reduce((acc: { [fugo: string]: string[] }, cur) => {
-          console.log(cur);
-
           let fugo = cur[1]!.split("").reverse().join("");
           let term = cur[2]; // まだ反転させたままにする
 
@@ -1210,9 +1208,9 @@ class SatTazumen {
         }, {})
     )
       // 複数回登場した符号のみ抽出
-      .filter((arr) => {
-        return arr[1].length > 1;
-      })
+      // .filter((arr) => {
+      //   return arr[1].length > 1;
+      // })
       // 以下、符号ごとにcommon_term（符号に対応するターム）を推定する
       .map((arr) => {
         let fugo: string = arr[0];
@@ -1222,47 +1220,52 @@ class SatTazumen {
         let common_term = "";
         let i = 0;
 
-        // 一文字ずつループ
-        while (terms) {
-          let [char_max, char_cnt] = Object.entries(
-            // 次の一文字を切り出す
-            terms
-              .map((term) => {
-                return term.substring(i, i + 1).toLowerCase();
-              })
-              // 文字毎の登場回数を集計
-              .reduce((acc: { [char: string]: number }, cur) => {
-                if (!(cur in acc)) {
-                  acc[cur] = 0;
-                }
-                acc[cur]++;
-                return acc;
-              }, {})
-          )
-            // 登場回数が最も多い文字列（char_max）とその回数（char_cnt）を取得
-            .reduce(
-              (acc, cur) => {
-                if (acc[1] < cur[1]) {
-                  acc[0] = cur[0];
-                  acc[1] = cur[1];
-                }
-                return acc;
-              },
-              ["", 0]
-            );
+        if (term_cnt === 1) {
+          common_term = terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)![0]!;
+        } else {
+          // 一文字ずつループ
+          while (terms) {
+            let [char_max, char_cnt] = Object.entries(
+              // 次の一文字を切り出す
+              terms
+                .map((term) => {
+                  return term.substring(i, i + 1).toLowerCase();
+                })
+                // 文字毎の登場回数を集計
+                .reduce((acc: { [char: string]: number }, cur) => {
+                  if (!(cur in acc)) {
+                    acc[cur] = 0;
+                  }
+                  acc[cur]++;
+                  return acc;
+                }, {})
+            )
+              // 登場回数が最も多い文字列（char_max）とその回数（char_cnt）を取得
+              .reduce(
+                (acc, cur) => {
+                  if (acc[1] < cur[1]) {
+                    acc[0] = cur[0];
+                    acc[1] = cur[1];
+                  }
+                  return acc;
+                },
+                ["", 0]
+              );
 
-          // 一致する単語が全体の７割未満になったところで終了
-          if (char_cnt / term_cnt < 0.7) {
-            break;
+            // 一致する単語が全体の７割未満になったところで終了
+            if (char_cnt / term_cnt < 0.7) {
+              break;
+            }
+
+            // 文字数を１増やし、長さが足りない単語を除外
+            common_term = `${char_max}${common_term}`;
+            i++;
+            terms = terms.filter((term) => {
+              return term.length > i;
+            });
           }
-
-          // 文字数を１増やし、長さが足りない単語を除外
-          common_term = `${char_max}${common_term}`;
-          i++;
-          terms = terms.filter((term) => {
-            return term.length > i;
-          });
         }
+
         return [fugo, common_term];
       })
       // 適切なタームが見つかったものだけ抽出

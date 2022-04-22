@@ -1699,7 +1699,7 @@ async function analyseFugo() {
       li.innerText = "";
     } else {
       li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
-      console.log(`図面解析終了(${i}番目)`);
+      // console.log(`図面解析終了(${i}番目)`);
     }
   }
 }
@@ -1721,6 +1721,7 @@ async function analyzeDiv(div: HTMLDivElement) {
 
   let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g);
   if (!fugo_arr) fugo_arr = [];
+  console.log(fugo_arr);
 
   fugo_arr = fugo_arr.filter((num: string) => {
     return num in sat.tazumen.fugo_dic;
