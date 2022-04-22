@@ -1143,74 +1143,179 @@ class SatComment {
 class SatTazumen {
   sat: Sat;
   fugo_dic: { [fugo: string]: string } = {};
+  fugo_white_list: string = "";
 
   constructor(sat: Sat) {
     this.sat = sat;
   }
 
-  extractFugo_ja = (text: string): void => {
-    // let sentence = document.getElementById("content").innerText;
+  extractFugo = (text: string): void => {
+    let cnt_ja_tmp = text.match(/請求項/g);
+    let cnt_en_tmp = text.match(/claim/gi);
+    let cnt_ja: number = cnt_ja_tmp ? cnt_ja_tmp.length : 0;
+    let cnt_en: number = cnt_en_tmp ? cnt_en_tmp.length : 0;
 
-    // 段落０００１以降の文章に（可能であれば）限定
-    let mt = text.match(/[【［\[](0001|０００１)[】］\]]/);
-    if (mt) {
-      text = text.substring(mt.index!);
+    // 言語に応じて前処理＆正規表現セット
+    let re_fugo_term;
+    if (cnt_ja >= cnt_en) {
+      // 日本語モード
+      text = this.zen2Han(text);
+
+      // 段落０００１以降の文章に（可能であれば）限定
+      let mt = text.match(/[【［\[]0001[】］\]]/);
+      if (mt) {
+        text = text.substring(mt.index!);
+      }
+      text = text
+        .replace(/【[^】]*】/g, " ")
+        .replace(/[【［\[][0-9]{4}[】］\]]/g, " ")
+        .replace(
+          /(実施例?|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|ＪＰ|ＵＳ|ＷＯ|ＤＥ)[0-9]+[a-zA-Z]*/g,
+          " "
+        );
+      re_fugo_term =
+        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶA-Z][^0-9,，、。\s】]{0,19}[一-龠ア-ンァ-ヶA-Z])/g;
+    } else {
+      // 英語モード
+
+      // 段落０００１以降の文章に（可能であれば）限定
+      let mt = text.match(/[【［\[]0001[】］\]]/);
+      if (mt) {
+        text = text.substring(mt.index!);
+      }
+      text = text
+        .replace(/【[^】]*】/g, " ")
+        .replace(/[【［\[][0-9]{4}[】］\]]/g, " ");
+      re_fugo_term = /([a-zA-Z]{0,3}[0-9]{1,4})\s([^0-9.,]{0,39}[a-zA-Z])/g;
     }
-
-    //取得するパターンを定義。文字種別で雑にたくさん拾ってくる
-    let re_jp =
-      /([一-龠ア-ンァ-ヶＡ-Ｚー]{2,20})([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
-    //除外するパターンを定義。縦棒は半角なので、全角が入らないように注意
-    let re_anti_jp =
-      /([実施|実施例|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|丁目|ＪＰ|ＵＳ|ＷＯ|ＤＥ]{1,20})([0-9０-９]{0,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
-
-    let result = text.match(re_jp);
-    let u_result = this.removeRep(result);
-    let result_sort = u_result.sort(this.CompareForSort);
-
-    let anti_result = text.match(re_anti_jp);
-    let u_anti_result = this.removeRep(anti_result);
-    let anti_sort_result = u_anti_result.sort(this.CompareForSort);
-
-    let diff_result = this.diffArray(result_sort, anti_sort_result);
-
-    let words = diff_result;
+    let text_reversed = text.split("").reverse().join("");
 
     this.fugo_dic = {};
-    words.forEach((word) => {
-      let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
-      let name = word.substring(0, mt.index);
-      let num = this.zen2Han(word.substring(mt.index));
-      this.fugo_dic[num] = name;
-    });
+    Object.entries(
+      // 正規表現を実行
+      [...text_reversed.matchAll(re_fugo_term)]
+
+        // 符号ごとにまとめて連想配列に格納
+        .reduce((acc: { [fugo: string]: string[] }, cur) => {
+          console.log(cur);
+
+          let fugo = cur[1]!.split("").reverse().join("");
+          let term = cur[2]; // まだ反転させたままにする
+
+          if (!(fugo in acc)) {
+            acc[fugo] = [];
+          }
+          acc[fugo]!.push(String(term));
+          return acc;
+        }, {})
+    )
+      // 複数回登場した符号のみ抽出
+      .filter((arr) => {
+        return arr[1].length > 1;
+      })
+      // 以下、符号ごとにcommon_term（符号に対応するターム）を推定する
+      .map((arr) => {
+        let fugo: string = arr[0];
+        let terms: string[] = arr[1];
+
+        let term_cnt = terms.length;
+        let common_term = "";
+        let i = 0;
+
+        // 一文字ずつループ
+        while (terms) {
+          let [char_max, char_cnt] = Object.entries(
+            // 次の一文字を切り出す
+            terms
+              .map((term) => {
+                return term.substring(i, i + 1).toLowerCase();
+              })
+              // 文字毎の登場回数を集計
+              .reduce((acc: { [char: string]: number }, cur) => {
+                if (!(cur in acc)) {
+                  acc[cur] = 0;
+                }
+                acc[cur]++;
+                return acc;
+              }, {})
+          )
+            // 登場回数が最も多い文字列（char_max）とその回数（char_cnt）を取得
+            .reduce(
+              (acc, cur) => {
+                if (acc[1] < cur[1]) {
+                  acc[0] = cur[0];
+                  acc[1] = cur[1];
+                }
+                return acc;
+              },
+              ["", 0]
+            );
+
+          // 一致する単語が全体の７割未満になったところで終了
+          if (char_cnt / term_cnt < 0.7) {
+            break;
+          }
+
+          // 文字数を１増やし、長さが足りない単語を除外
+          common_term = `${char_max}${common_term}`;
+          i++;
+          terms = terms.filter((term) => {
+            return term.length > i;
+          });
+        }
+        return [fugo, common_term];
+      })
+      // 適切なタームが見つかったものだけ抽出
+      .filter((arr) => {
+        return arr[1]!.replace(/\s/g, "") !== "";
+      })
+      // 符号の辞書に登録
+      .forEach((arr) => {
+        this.fugo_dic[arr[0]!] = arr[1]!.replace(/^\s/, "");
+      });
+
+    // 符号として登場する文字を取得してホワイトリストを作る
+    this.fugo_white_list = Array.from(
+      new Set(Object.keys(this.fugo_dic).join("").split(""))
+    ).join("");
   };
 
-  removeRep = (ary: any) => {
-    //unique配列にする
-    let temp: any = {},
-      res = [];
-    for (let i = 0; i < ary.length; i++) temp[ary[i]] = i;
-    for (let key in temp) res.push(key);
-    return res;
-  };
+  // extractFugo_ja = (text: string): void => {
+  //   // let sentence = document.getElementById("content").innerText;
 
-  diffArray = (arr1: any, arr2: any) => {
-    //配列の差分
-    var newArr = [];
-    for (var a = 0; a < arr1.length; a++) {
-      if (arr2.indexOf(arr1[a]) === -1) {
-        newArr.push(arr1[a]);
-      }
-    }
-    return newArr;
-  };
+  //   // 段落０００１以降の文章に（可能であれば）限定
+  //   let mt = text.match(/[【［\[](0001|０００１)[】］\]]/);
+  //   if (mt) {
+  //     text = text.substring(mt.index!);
+  //   }
 
-  CompareForSort = (first: any, second: any) => {
-    //昇順
-    if (first == second) return 0;
-    if (first < second) return -1;
-    else return 1;
-  };
+  //   //取得するパターンを定義。文字種別で雑にたくさん拾ってくる
+  //   let re_jp =
+  //     /([一-龠ア-ンァ-ヶＡ-Ｚー]{2,20})([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
+  //   //除外するパターンを定義。縦棒は半角なので、全角が入らないように注意
+  //   let re_anti_jp =
+  //     /([実施|実施例|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|丁目|ＪＰ|ＵＳ|ＷＯ|ＤＥ]{1,20})([0-9０-９]{0,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/gi;
+
+  //   let result = text.match(re_jp);
+  //   let u_result = this.removeRep(result);
+  //   let result_sort = u_result.sort(this.CompareForSort);
+
+  //   let anti_result = text.match(re_anti_jp);
+  //   let u_anti_result = this.removeRep(anti_result);
+  //   let anti_sort_result = u_anti_result.sort(this.CompareForSort);
+
+  //   let diff_result = this.diffArray(result_sort, anti_sort_result);
+
+  //   let words = diff_result;
+
+  //   this.fugo_dic = {};
+  //   words.forEach((word) => {
+  //     let mt = word.match(/([0-9０-９]{1,4})([a-zａ-ｚA-ZＡ-Ｚ]{0,3})/);
+  //     let name = word.substring(0, mt.index);
+  //     let num = this.zen2Han(word.substring(mt.index));
+  //     this.fugo_dic[num] = name;
+  //   });
+  // };
 
   zen2Han = (strVal: string) => {
     //文字列を全角から半角にする

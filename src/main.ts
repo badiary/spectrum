@@ -1648,7 +1648,7 @@ function rotateBase64Image90deg(base64Image: any) {
 
 async function analyseFugo() {
   let li = document.getElementById("zumen_analysis")!;
-  sat.tazumen.extractFugo_ja(document.getElementById("content")!.innerText);
+  sat.tazumen.extractFugo(document.getElementById("content")!.innerText);
 
   console.log("--- テキストからの符号データ抽出結果 ---");
   console.log(sat.tazumen.fugo_dic);
@@ -1680,7 +1680,7 @@ async function analyzeDiv(div: HTMLDivElement) {
   await worker.loadLanguage("eng");
   await worker.initialize("eng");
   await worker.setParameters({
-    tessedit_char_whitelist: "0123456789",
+    tessedit_char_whitelist: sat.tazumen.fugo_white_list,
   });
   const {
     data: { text },
