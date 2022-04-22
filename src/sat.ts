@@ -1207,7 +1207,7 @@ class SatTazumen {
           return acc;
         }, {})
     )
-      // 複数回登場した符号のみ抽出
+      // // 複数回登場した符号のみ抽出
       // .filter((arr) => {
       //   return arr[1].length > 1;
       // })
@@ -1221,7 +1221,9 @@ class SatTazumen {
         let i = 0;
 
         if (term_cnt === 1) {
-          common_term = terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)![0]!;
+          common_term = terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)
+            ? terms[0]!.match(/^[一-龠ア-ンァ-ヶa-zA-Z]+/)![0]!
+            : "";
         } else {
           // 一文字ずつループ
           while (terms) {
