@@ -59,6 +59,9 @@ window.addEventListener("load", async () => {
     cv,
     selected_color,
     (document.getElementById("dark_mode")! as HTMLInputElement).checked,
+    (
+      document.getElementById("zumen_analysis_mode")! as HTMLInputElement
+    ).checked,
     (document.getElementById("block_mode")! as HTMLInputElement).checked
   );
 
@@ -582,6 +585,23 @@ async function initializeHTML() {
     sat.cv.draw();
   });
 
+  document
+    .getElementById("zumen_analysis_mode")!
+    .addEventListener("change", (e) => {
+      if (!(e.target instanceof HTMLInputElement)) return;
+
+      localStorage.setItem(
+        "SAT_zumen_analysis_mode",
+        e.target.checked.toString()
+      );
+      if (e.target.checked) {
+        sat.zumen_analysis_mode = true;
+        analyseFugo();
+      } else {
+        sat.zumen_analysis_mode = false;
+      }
+    });
+
   // カラーピッカー関連
   document.getElementById("colormap")!.addEventListener("mouseout", (e) => {
     colorPickerMouseOut();
@@ -805,7 +825,14 @@ async function initializeHTML() {
       modal.style.display = "none";
       e.preventDefault();
       setDataFromTazumenBrowser(JSON.parse(paste_data));
-      analyseFugo();
+
+      if (
+        (
+          document.getElementById("zumen_analysis_mode")! as HTMLInputElement
+        ).checked.toString() !== localStorage.getItem("SAT_zumen_analysis_mode")
+      ) {
+        document.getElementById("zumen_analysis_mode")!.click();
+      }
     });
   }
 
@@ -816,7 +843,16 @@ async function initializeHTML() {
       case "tazumen":
         if (e.origin === "http://npsx8.jpo.go.jp") {
           setDataFromTazumenBrowser(e.data);
-          analyseFugo();
+          if (
+            (
+              document.getElementById(
+                "zumen_analysis_mode"
+              )! as HTMLInputElement
+            ).checked.toString() !==
+            localStorage.getItem("SAT_zumen_analysis_mode")
+          ) {
+            document.getElementById("zumen_analysis_mode")!.click();
+          }
           sat.updated = true;
         }
         break;
@@ -1518,6 +1554,12 @@ function addZumenEventHandler() {
             if (g_zumen_clicked && e.target instanceof HTMLImageElement) {
               // シングルクリック判定（画像の回転）
               e.target.src = rotateBase64Image90deg(e.target.src);
+
+              // 図面解析
+              let li = document.getElementById("zumen_analysis")!;
+              li.innerText = `図面解析中...(0 / 1)`;
+              analyzeDiv(e.target.parentElement! as HTMLDivElement);
+              li.innerText = "";
             }
 
             g_zumen_clicked = false;
@@ -1608,59 +1650,67 @@ async function analyseFugo() {
   console.log("--- テキストからの符号データ抽出結果 ---");
   console.log(sat.tazumen.fugo_dic);
   console.log("--- 画像からの符号データ抽出結果 ---");
-  let zumen_divs = Array.from(document.querySelectorAll("#zumen > div"));
+  let zumen_divs = (
+    Array.from(document.querySelectorAll("#zumen > div")) as HTMLDivElement[]
+  ).filter((div) => {
+    return !div.querySelector("p.fugo");
+  });
   let finished_cnt = 0;
 
   li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
-  zumen_divs.forEach(async (div, i) => {
-    const worker = Tesseract.createWorker();
-    await worker.load();
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
-    await worker.setParameters({
-      tessedit_char_whitelist: "0123456789",
-    });
-    const {
-      data: { text },
-    } = await worker.recognize(div.querySelector("img"));
-
-    console.log(i, text.match(/[0-9]+[a-zA-Z]{0,3}/g));
-    let fugo_text = text
-      .match(/[0-9]+[a-zA-Z]{0,3}/g)
-      .filter((num: string) => {
-        return num in sat.tazumen.fugo_dic;
-      })
-      .sort((a: string, b: string) => {
-        (a = String(a)), (b = String(b));
-        if (a < b) {
-          return -1;
-        }
-        if (a > b) {
-          return 1;
-        }
-        return 0;
-      })
-      .map((num: string) => {
-        console.log(sat.tazumen.fugo_dic);
-        console.log(num);
-        console.log(sat.tazumen.fugo_dic[num]);
-        return `${num} ${sat.tazumen.fugo_dic[num]}`;
-      })
-      .join(",");
-
-    let p = document.createElement("p");
-    p.style.display = "none";
-    p.classList.add("fugo");
-    p.innerText = fugo_text;
-    div.appendChild(p);
-
+  for (let i = 0; i < zumen_divs.length; i++) {
+    analyzeDiv(zumen_divs[i]!);
     finished_cnt++;
     if (finished_cnt === zumen_divs.length) {
       li.innerText = "";
     } else {
       li.innerText = `図面解析中...(${finished_cnt}/${zumen_divs.length})`;
     }
+  }
+}
+
+async function analyzeDiv(div: HTMLDivElement) {
+  const worker = Tesseract.createWorker();
+  await worker.load();
+  await worker.loadLanguage("eng");
+  await worker.initialize("eng");
+  await worker.setParameters({
+    tessedit_char_whitelist: "0123456789",
   });
+  const {
+    data: { text },
+  } = await worker.recognize(div.querySelector("img"));
+
+  console.log(text.match(/[0-9]+[a-zA-Z]{0,3}/g));
+  let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g).filter((num: string) => {
+    return num in sat.tazumen.fugo_dic;
+  });
+  fugo_arr = Array.from(new Set(fugo_arr));
+
+  let fugo_text = fugo_arr
+    .sort((a: string, b: string) => {
+      (a = String(a)), (b = String(b));
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    })
+    .map((num: string) => {
+      return `${num} ${sat.tazumen.fugo_dic[num]}`;
+    })
+    .join(",");
+
+  let p = div.querySelector("p.fugo") as HTMLParagraphElement;
+  if (!p) {
+    p = document.createElement("p");
+    p.style.display = "none";
+    p.classList.add("fugo");
+  }
+  p.innerText = fugo_text;
+  div.appendChild(p);
 }
 
 /*

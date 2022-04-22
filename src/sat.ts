@@ -13,6 +13,7 @@ export class Sat {
   content_root: HTMLElement; // コンテンツを含む要素を指定
   content_window: Window; // コンテンツを含むウィンドウを指定（PDF版はiframeのwindowになる）
   dark_mode: boolean;
+  zumen_analysis_mode: boolean;
   updated: boolean = false; // 内容が更新されているかのフラグ（ページ遷移に対して警告を出す用）
 
   word: SatWord; // ワード反転を扱うオブジェクト
@@ -29,12 +30,14 @@ export class Sat {
     cv: HTMLCanvasElement,
     selected_color: { [key: string]: string },
     dark_mode: boolean,
+    zumen_analysis_mode: boolean,
     block_mode: boolean
   ) {
     this.tool_type = tool_type;
     this.content_root = content_root;
     this.content_window = content_window;
     this.dark_mode = dark_mode;
+    this.zumen_analysis_mode = zumen_analysis_mode;
 
     this.word = new SatWord(this, selected_color, block_mode);
     this.cv = new SatCanvas(this, cv);
