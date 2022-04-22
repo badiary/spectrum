@@ -1184,12 +1184,10 @@ class SatTazumen {
 
   removeRep = (ary: any) => {
     //unique配列にする
-    var temp = {},
+    let temp: any = {},
       res = [];
-    // @ts-ignore
-    for (var i = 0; i < ary.length; i++) temp[ary[i]] = i;
-    // @ts-ignore
-    for (key in temp) res.push(key);
+    for (let i = 0; i < ary.length; i++) temp[ary[i]] = i;
+    for (let key in temp) res.push(key);
     return res;
   };
 
