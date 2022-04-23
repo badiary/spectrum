@@ -1710,9 +1710,9 @@ async function analyzeDiv(div: HTMLDivElement) {
   const path =
     "https://www.material-analysis-and-medical-diagnosis-division.physics-sector.first-patent-examination-department.jpo.go.jp/higuchi/sat/tesseract/";
   const worker = Tesseract.createWorker({
-    workerPath: path,
+    workerPath: path + "worker.min.js",
     langPath: path,
-    corePath: path,
+    corePath: path + "tesseract-core.wasm.js",
   });
   await worker.load();
   await worker.loadLanguage("eng");
