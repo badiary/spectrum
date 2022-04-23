@@ -1707,13 +1707,7 @@ async function analyseFugo() {
 async function analyzeDiv(div: HTMLDivElement) {
   div.querySelector("h3")!.classList.remove("analysed");
 
-  const path =
-    "https://www.material-analysis-and-medical-diagnosis-division.physics-sector.first-patent-examination-department.jpo.go.jp/higuchi/sat/tesseract/";
-  const worker = Tesseract.createWorker({
-    workerPath: path + "worker.min.js",
-    langPath: path,
-    corePath: path + "tesseract-core.wasm.js",
-  });
+  const worker = Tesseract.createWorker({});
   await worker.load();
   await worker.loadLanguage("eng");
   await worker.initialize("eng");
