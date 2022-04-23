@@ -1523,9 +1523,9 @@ function addZumenEventHandler() {
             (
               e.target.parentElement!.querySelector("p.fugo") as HTMLElement
             ).innerText
-              .split(",")
+              .split("\n")
               .forEach((fugo_text) => {
-                let [fugo, term] = fugo_text.split("::");
+                let [fugo, term] = fugo_text.split(",");
                 let dt = document.createElement("dt");
                 dt.style.width = "20%";
                 dt.style.margin = "0";
@@ -1753,9 +1753,9 @@ async function analyzeDiv(div: HTMLDivElement) {
       return 0;
     })
     .map((num: string) => {
-      return `${num}::${sat.tazumen.fugo_dic[num]}`;
+      return `${num},${sat.tazumen.fugo_dic[num]}`;
     })
-    .join(",");
+    .join("\n");
 
   let p = div.querySelector("p.fugo") as HTMLParagraphElement;
   if (!p) {
