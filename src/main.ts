@@ -1736,7 +1736,12 @@ async function analyzeDiv(div: HTMLDivElement) {
     console.log("図面タイトル：", zumen_title);
     console.log(sat.tazumen.zumen_fugo_dic[zumen_title]);
     if (zumen_title !== "" && sat.tazumen.zumen_fugo_dic[zumen_title]) {
+      console.log(
+        "次を追加",
+        Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!)
+      );
       fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
+      console.log("追加結果", fugo_arr);
     }
   }
 
