@@ -1728,8 +1728,18 @@ async function analyzeDiv(div: HTMLDivElement) {
   fugo_arr = fugo_arr.filter((num: string) => {
     return num in sat.tazumen.fugo_dic;
   });
-  fugo_arr = Array.from(new Set(fugo_arr));
 
+  // もし図面タイトルがあるなら、テキストから推定した図面と符号の関係を追加
+  let zumen_title: string;
+  if (
+    div.querySelector("h3") &&
+    (zumen_title = div.querySelector("h3")!.innerText) !== "" &&
+    sat.tazumen.zumen_fugo_dic[zumen_title]
+  ) {
+    fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
+  }
+
+  fugo_arr = Array.from(new Set(fugo_arr));
   let fugo_text = fugo_arr
     .sort((a: string, b: string) => {
       let num_a = Number(a.match(/[0-9]+/));
