@@ -1502,6 +1502,10 @@ function addZumenEventHandler() {
             height: 100%;
         }
 
+        body {
+          background-color: #eee;
+        }
+        
         h3 {
             text-align: center;
             height: 30px;
@@ -1612,7 +1616,7 @@ function addZumenEventHandler() {
           const img_clone = e.target.cloneNode() as HTMLImageElement;
           if (document.body.classList.contains("dark")) {
             zumen_subwin.document.body.style.color = "#ddd";
-            zumen_subwin.document.body.style.color = "#ddd";
+            zumen_subwin.document.body.style.backgroundColor = "#333";
             zumen_subwin.document.getElementById(
               "fugo_and_zumen"
             )!.style.backgroundColor = "#000";
