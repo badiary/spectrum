@@ -1734,6 +1734,7 @@ async function analyzeDiv(div: HTMLDivElement) {
   if (div.querySelector("h3")) {
     zumen_title = div.querySelector("h3")!.innerText;
     console.log("図面タイトル：", zumen_title);
+    console.log(sat.tazumen.zumen_fugo_dic[zumen_title]);
     if (zumen_title !== "" && sat.tazumen.zumen_fugo_dic[zumen_title]) {
       fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
     }
