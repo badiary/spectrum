@@ -1740,8 +1740,9 @@ async function analyzeDiv(div: HTMLDivElement) {
         "次を追加",
         Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!)
       );
-      fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
-      console.log("追加結果", fugo_arr);
+      fugo_arr = fugo_arr.concat(
+        Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!)
+      );
     }
   }
 
