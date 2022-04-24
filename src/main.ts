@@ -1731,12 +1731,12 @@ async function analyzeDiv(div: HTMLDivElement) {
 
   // もし図面タイトルがあるなら、テキストから推定した図面と符号の関係を追加
   let zumen_title: string;
-  if (
-    div.querySelector("h3") &&
-    (zumen_title = div.querySelector("h3")!.innerText) !== "" &&
-    sat.tazumen.zumen_fugo_dic[zumen_title]
-  ) {
-    fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
+  if (div.querySelector("h3")) {
+    zumen_title = div.querySelector("h3")!.innerText;
+    console.log("図面タイトル：", zumen_title);
+    if (zumen_title !== "" && sat.tazumen.zumen_fugo_dic[zumen_title]) {
+      fugo_arr.concat(Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!));
+    }
   }
 
   fugo_arr = Array.from(new Set(fugo_arr));
