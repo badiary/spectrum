@@ -1521,8 +1521,8 @@ function addZumenEventHandler() {
 
             (
               e.target.parentElement!.querySelector("p.fugo") as HTMLElement
-            ).innerText
-              .split("\n")
+            ).innerHTML
+              .split("<br>")
               .forEach((fugo_text) => {
                 let [fugo, term] = fugo_text.split(",");
                 let dt = document.createElement("dt");
