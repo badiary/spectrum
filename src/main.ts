@@ -1505,7 +1505,7 @@ function addZumenEventHandler() {
         body {
           background-color: #eee;
         }
-        
+
         h3 {
             text-align: center;
             height: 30px;
@@ -1545,7 +1545,6 @@ function addZumenEventHandler() {
             max-width: calc(100%-230px);
             height: 100%;
             text-align: center;
-            margin: auto;
         }
 
         div#zumen img {
