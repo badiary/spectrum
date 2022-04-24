@@ -1509,11 +1509,11 @@ function addZumenEventHandler() {
 
         div#fugo_and_zumen {
             display: flex;
-            width: calc(100% - 40px);
-            height: calc(100% - 176px);
-            border-top: 3px solid #000;
-            border-bottom: 3px solid #000;
+            justify-content: center;
+            max-width: calc(100% - 40px);
+            height: calc(100% - 170px);
             padding: 20px;
+            background-color: #fff;
         }
 
         div#fugo {
@@ -1538,7 +1538,7 @@ function addZumenEventHandler() {
         }
 
         div#zumen {
-            width: 100%;
+            max-width: calc(100%-230px);
             height: 100%;
             text-align: center;
             margin: auto;
@@ -1612,7 +1612,10 @@ function addZumenEventHandler() {
           const img_clone = e.target.cloneNode() as HTMLImageElement;
           if (document.body.classList.contains("dark")) {
             zumen_subwin.document.body.style.color = "#ddd";
-            zumen_subwin.document.body.style.backgroundColor = "#333";
+            zumen_subwin.document.body.style.color = "#ddd";
+            zumen_subwin.document.getElementById(
+              "fugo_and_zumen"
+            )!.style.backgroundColor = "#000";
             img_clone.style.filter = "invert(100%)";
           }
           zumen_subwin.document.getElementById("zumen")!.appendChild(img_clone);
