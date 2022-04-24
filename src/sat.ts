@@ -1143,6 +1143,7 @@ class SatComment {
 class SatTazumen {
   sat: Sat;
   fugo_dic: { [fugo: string]: string } = {};
+  zumen_fugo_dic: { [zumen: string]: { [fugo: string]: string } } = {};
   fugo_white_list: string = "";
 
   constructor(sat: Sat) {
@@ -1150,6 +1151,9 @@ class SatTazumen {
   }
 
   extractFugo = (text: string): void => {
+    let lang: string; // 明細書の言語
+    let text_re: string; // 符号候補抽出用のテキスト
+
     let cnt_ja_tmp = text.match(/請求項/g);
     let cnt_en_tmp = text.match(/claim/gi);
     let cnt_ja: number = cnt_ja_tmp ? cnt_ja_tmp.length : 0;
@@ -1159,41 +1163,51 @@ class SatTazumen {
     let re_fugo_term;
     if (cnt_ja >= cnt_en) {
       // 日本語モード
+      lang = "ja";
       text = this.zen2Han(text);
+      text_re = text;
 
       // 段落０００１以降の文章に（可能であれば）限定
-      let mt = text.match(/[【［\[]0001[】］\]]/);
+      let mt = text_re.match(/[【［\[]0001[】］\]]/);
       if (mt) {
-        text = text.substring(mt.index!);
+        text_re = text_re.substring(mt.index!);
       }
-      text = text
+      text_re = text_re
         .replace(/【[^】]*】/g, " ")
         .replace(/[【［\[][0-9]{4}[】］\]]/g, " ")
         .replace(
-          /(実施例?|比較例|従来例|形態|請求項|特開|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|ＪＰ|ＵＳ|ＷＯ|ＤＥ)[0-9]+[a-zA-Z]*/g,
+          /(実施例?|比較例|従来例|形態|請求項|特開[平昭]?|平成|昭和|変形例|手続補正|第|該|当該|変形例|前記|上記|特許|国際公開|図|乃至|特許文献|好ましくは|例えば|から|まで|以上|以下|未満|または|又は|および|及び|若しくは|\.|JP|US|WO|DE)[0-9]+[a-zA-Z]*/g,
           " "
         );
       re_fugo_term =
-        /([a-zA-Z]{0,3}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶa-zA-Z][^0-9,，、。\s】]{0,20})/g;
+        /([a-zA-Z]{0,1}[0-9]{1,4})([一-龠あ-んア-ンァ-ヶa-zA-Z][^0-9,，、。\s】]{0,20})/g;
     } else {
       // 英語モード
+      lang = "en";
+      text_re = text;
 
       // 段落０００１以降の文章に（可能であれば）限定
-      let mt = text.match(/[【［\[]0001[】］\]]/);
+      let mt = text_re.match(/[【［\[]0001[】］\]]/);
       if (mt) {
-        text = text.substring(mt.index!);
+        text_re = text_re.substring(mt.index!);
       }
-      text = text
+      text_re = text_re
         .replace(/【[^】]*】/g, " ")
-        .replace(/[【［\[][0-9]{4}[】］\]]/g, " ");
-      re_fugo_term = /([a-zA-Z]{0,3}[0-9]{1,4})\s([^0-9.,]{0,39}[a-zA-Z])/g;
+        .replace(/[【［\[][0-9]{4}[】］\]]/g, " ")
+        .replace(
+          /\b(exapmle|between|from|to|of|and|or|claim|about|than|at|a|thru|through|JP|US|WO|DE)\s*[0-9]+[a-zA-Z]*/gi,
+          " "
+        )
+        .replace(/[0-9]+[0-9a-zA-Z]*[^0-9a-zA-Z\s]+/g, "");
+
+      re_fugo_term = /\b([a-zA-Z]{0,1}[0-9]{1,4})\s([^0-9.,]{0,39}[a-zA-Z])\b/g;
     }
-    let text_reversed = text.split("").reverse().join("");
+    let text_re_reversed = text_re.split("").reverse().join("");
 
     this.fugo_dic = {};
     Object.entries(
       // 正規表現を実行
-      [...text_reversed.matchAll(re_fugo_term)]
+      [...text_re_reversed.matchAll(re_fugo_term)]
 
         // 符号ごとにまとめて連想配列に格納
         .reduce((acc: { [fugo: string]: string[] }, cur) => {
@@ -1291,6 +1305,36 @@ class SatTazumen {
     this.fugo_white_list = Array.from(
       new Set(["0123456789", ...Object.keys(this.fugo_dic)].join("").split(""))
     ).join("");
+
+    // 以下、テキストから図面と符号の関係を推定
+    let re_paragraph: RegExp, re_zumen_num: RegExp;
+    this.zumen_fugo_dic = {};
+    let fugo_arr = Object.entries(this.fugo_dic);
+    if (lang === "ja") {
+      text = text.replace(/[、。，,]/g, "");
+      re_paragraph = /【([0-9]{4})】([^【]+)/g;
+      re_zumen_num = /図[0-9]+(?:[-0-9a-zA-Z]*[0-9a-zA-Z])?/g;
+    } else {
+      re_paragraph = /\[([0-9]{4})\]([^\[]+)/g;
+      re_zumen_num = /(FIG|Fig)\.?\s*[0-9]+(?:[-0-9a-zA-Z]*[0-9a-zA-Z])?/g;
+    }
+
+    [...text.matchAll(re_paragraph)].forEach((paragraph) => {
+      // let paragraph_num = paragraph[1];
+      let paragraph_text = paragraph[2]!;
+      [...paragraph_text.trim().matchAll(re_zumen_num)].forEach((mt) => {
+        let zumen_num = mt[0]!;
+        fugo_arr.forEach((fugo) => {
+          let fugo_term = `${fugo[1]}${fugo[0]}`;
+          if (paragraph_text.indexOf(fugo_term) !== -1) {
+            if (!(zumen_num in this.zumen_fugo_dic)) {
+              this.zumen_fugo_dic[zumen_num] = {};
+            }
+            this.zumen_fugo_dic[zumen_num]![fugo[0]] = fugo[1];
+          }
+        });
+      });
+    });
   };
 
   zen2Han = (strVal: string) => {

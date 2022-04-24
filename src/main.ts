@@ -821,7 +821,6 @@ async function initializeHTML() {
       const paste_data = (e.clipboardData || window.clipboardData).getData(
         "text"
       );
-      console.log(paste_data);
       modal.style.display = "none";
       e.preventDefault();
       setDataFromTazumenBrowser(JSON.parse(paste_data));
@@ -841,6 +840,7 @@ async function initializeHTML() {
 
   // 多図面ブラウザ等からのデータの受信に関する処理
   window.addEventListener("message", (e) => {
+    console.log("受信したメッセージ");
     console.log(e);
     switch (e.data.message_type) {
       case "tazumen":
@@ -1291,7 +1291,6 @@ function colorPickerMouseOver(color_code: string) {
         return span.getAttribute("color_id") === color_id;
       })
       .forEach((span) => {
-        console.log(color_code);
         span.style.setProperty("background-color", color_code, "important");
         span.style.color = sat.word.calcWordColor(color_code);
       });
@@ -1682,6 +1681,8 @@ async function analyseFugo() {
 
   console.log("--- テキストからの符号データ抽出結果 ---");
   console.log(sat.tazumen.fugo_dic);
+  console.log("--- テキストからの図面と符号の関係抽出結果 ---");
+  console.log(sat.tazumen.zumen_fugo_dic);
   console.log("--- 画像からの符号データ抽出結果 ---");
   let zumen_divs = (
     Array.from(document.querySelectorAll("#zumen > div")) as HTMLDivElement[]
@@ -1721,6 +1722,7 @@ async function analyzeDiv(div: HTMLDivElement) {
 
   let fugo_arr = text.match(/[0-9]+[a-zA-Z]{0,3}/g);
   if (!fugo_arr) fugo_arr = [];
+  console.log("図面から抽出された符号一覧");
   console.log(fugo_arr);
 
   fugo_arr = fugo_arr.filter((num: string) => {
