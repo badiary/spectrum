@@ -1743,6 +1743,7 @@ async function analyzeDiv(div: HTMLDivElement) {
       fugo_arr = fugo_arr.concat(
         Object.keys(sat.tazumen.zumen_fugo_dic[zumen_title]!)
       );
+      console.log("追加結果", fugo_arr);
     }
   }
 
